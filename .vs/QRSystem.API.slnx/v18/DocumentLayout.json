@@ -1,0 +1,619 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\.gitignore||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\.gitignore||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\core\\data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\core\\data\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\migrations\\20260409094320_initialcreate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\migrations\\20260409094320_initialcreate.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\controllers\\scancontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\controllers\\scancontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\controllers\\fraudcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\controllers\\fraudcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\controllers\\qrcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\controllers\\qrcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\services\\interfaces\\iscanservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\services\\interfaces\\iscanservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\services\\interfaces\\iqrservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\services\\interfaces\\iqrservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\infrastructure\\repositories\\interfaces\\iscanattemptrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\infrastructure\\repositories\\interfaces\\iscanattemptrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\infrastructure\\repositories\\implementation\\qrcoderepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\infrastructure\\repositories\\implementation\\qrcoderepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\services\\implementation\\scanservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\services\\implementation\\scanservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\services\\implementation\\qrservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\services\\implementation\\qrservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\services\\implementation\\fraudservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\services\\implementation\\fraudservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\services\\interfaces\\ifraudservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\services\\interfaces\\ifraudservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\infrastructure\\repositories\\implementation\\fraudlogrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\infrastructure\\repositories\\implementation\\fraudlogrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\infrastructure\\repositories\\implementation\\scanattemptrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\infrastructure\\repositories\\implementation\\scanattemptrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\infrastructure\\repositories\\interfaces\\iqrcoderepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\infrastructure\\repositories\\interfaces\\iqrcoderepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\infrastructure\\repositories\\interfaces\\ifraudlogrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\infrastructure\\repositories\\interfaces\\ifraudlogrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\core\\settings\\qrsettings.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\core\\settings\\qrsettings.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\core\\models\\scanattempt.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\core\\models\\scanattempt.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\core\\models\\fraudlog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\core\\models\\fraudlog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\core\\constants\\fraudreasons.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\core\\constants\\fraudreasons.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\backgroundservices\\qrrotationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\backgroundservices\\qrrotationservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\core\\models\\qrcode.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\core\\models\\qrcode.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\core\\models\\genericresponse.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\core\\models\\genericresponse.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\core\\constants\\scanresults.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\core\\constants\\scanresults.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\core\\dtos\\sessionstatsdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\core\\dtos\\sessionstatsdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\core\\dtos\\scanresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\core\\dtos\\scanresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\core\\dtos\\scanrequestdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\core\\dtos\\scanrequestdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\core\\dtos\\scanattemptdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\core\\dtos\\scanattemptdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\core\\dtos\\qrcoderesponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\core\\dtos\\qrcoderesponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\core\\dtos\\fraudlogdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\core\\dtos\\fraudlogdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|c:\\users\\oluwamisimi gbadebo\\source\\repos\\qrsystem.api\\qrsystem.api\\qrsystem.api.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{D64C673E-2196-66FD-2DB9-6D34E25F1EF8}|QRSystem.API\\QRSystem.API.csproj|solutionrelative:qrsystem.api\\qrsystem.api.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 2,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "AppDbContext.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\Data\\AppDbContext.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Core\\Data\\AppDbContext.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\Data\\AppDbContext.cs",
+              "RelativeToolTip": "QRSystem.API\\Core\\Data\\AppDbContext.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAEAAAAfAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:17:33.475Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\appsettings.json",
+              "RelativeDocumentMoniker": "QRSystem.API\\appsettings.json",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\appsettings.json",
+              "RelativeToolTip": "QRSystem.API\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAABEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-04-09T09:12:53.676Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": ".gitignore",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\.gitignore",
+              "RelativeDocumentMoniker": "QRSystem.API\\.gitignore",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\.gitignore",
+              "RelativeToolTip": "QRSystem.API\\.gitignore",
+              "ViewState": "AgIAAAkAAAAAAAAAAAAswDUAAAAIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-04-09T09:12:09.367Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{56df62a4-05a3-4e5b-aa1a-99371ccfb997}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Program.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Program.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Program.cs",
+              "RelativeToolTip": "QRSystem.API\\Program.cs",
+              "ViewState": "AgIAAAwAAAAAAAAAAAAAAAYAAAAuAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T09:13:34.379Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "20260409094320_InitialCreate.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Migrations\\20260409094320_InitialCreate.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Migrations\\20260409094320_InitialCreate.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Migrations\\20260409094320_InitialCreate.cs",
+              "RelativeToolTip": "QRSystem.API\\Migrations\\20260409094320_InitialCreate.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T09:43:21.031Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "FraudController.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Controllers\\FraudController.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Controllers\\FraudController.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Controllers\\FraudController.cs",
+              "RelativeToolTip": "QRSystem.API\\Controllers\\FraudController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAYAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:12:02.866Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "ScanController.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Controllers\\ScanController.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Controllers\\ScanController.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Controllers\\ScanController.cs",
+              "RelativeToolTip": "QRSystem.API\\Controllers\\ScanController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:12:22.998Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "QrController.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Controllers\\QrController.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Controllers\\QrController.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Controllers\\QrController.cs",
+              "RelativeToolTip": "QRSystem.API\\Controllers\\QrController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:12:46.701Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "IScanService.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Services\\Interfaces\\IScanService.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Services\\Interfaces\\IScanService.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Services\\Interfaces\\IScanService.cs",
+              "RelativeToolTip": "QRSystem.API\\Services\\Interfaces\\IScanService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:55:32.727Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "IQrService.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Services\\Interfaces\\IQrService.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Services\\Interfaces\\IQrService.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Services\\Interfaces\\IQrService.cs",
+              "RelativeToolTip": "QRSystem.API\\Services\\Interfaces\\IQrService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:54:48.464Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "IScanAttemptRepository.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Infrastructure\\Repositories\\Interfaces\\IScanAttemptRepository.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Infrastructure\\Repositories\\Interfaces\\IScanAttemptRepository.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Infrastructure\\Repositories\\Interfaces\\IScanAttemptRepository.cs",
+              "RelativeToolTip": "QRSystem.API\\Infrastructure\\Repositories\\Interfaces\\IScanAttemptRepository.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:32:24.45Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "QrCodeRepository.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Infrastructure\\Repositories\\Implementation\\QrCodeRepository.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Infrastructure\\Repositories\\Implementation\\QrCodeRepository.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Infrastructure\\Repositories\\Implementation\\QrCodeRepository.cs",
+              "RelativeToolTip": "QRSystem.API\\Infrastructure\\Repositories\\Implementation\\QrCodeRepository.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAA5AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:30:53.348Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "ScanService.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Services\\Implementation\\ScanService.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Services\\Implementation\\ScanService.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Services\\Implementation\\ScanService.cs",
+              "RelativeToolTip": "QRSystem.API\\Services\\Implementation\\ScanService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAOAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:59:26.408Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "QrService.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Services\\Implementation\\QrService.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Services\\Implementation\\QrService.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Services\\Implementation\\QrService.cs",
+              "RelativeToolTip": "QRSystem.API\\Services\\Implementation\\QrService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAkAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:51:59.208Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "FraudService.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Services\\Implementation\\FraudService.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Services\\Implementation\\FraudService.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Services\\Implementation\\FraudService.cs",
+              "RelativeToolTip": "QRSystem.API\\Services\\Implementation\\FraudService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:52:51.895Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "IFraudService.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Services\\Interfaces\\IFraudService.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Services\\Interfaces\\IFraudService.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Services\\Interfaces\\IFraudService.cs",
+              "RelativeToolTip": "QRSystem.API\\Services\\Interfaces\\IFraudService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:54:18.114Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "FraudLogRepository.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Infrastructure\\Repositories\\Implementation\\FraudLogRepository.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Infrastructure\\Repositories\\Implementation\\FraudLogRepository.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Infrastructure\\Repositories\\Implementation\\FraudLogRepository.cs",
+              "RelativeToolTip": "QRSystem.API\\Infrastructure\\Repositories\\Implementation\\FraudLogRepository.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:29:53.036Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 17,
+              "Title": "ScanAttemptRepository.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Infrastructure\\Repositories\\Implementation\\ScanAttemptRepository.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Infrastructure\\Repositories\\Implementation\\ScanAttemptRepository.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Infrastructure\\Repositories\\Implementation\\ScanAttemptRepository.cs",
+              "RelativeToolTip": "QRSystem.API\\Infrastructure\\Repositories\\Implementation\\ScanAttemptRepository.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAYAAAAWAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:32:02.094Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "IQrCodeRepository.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Infrastructure\\Repositories\\Interfaces\\IQrCodeRepository.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Infrastructure\\Repositories\\Interfaces\\IQrCodeRepository.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Infrastructure\\Repositories\\Interfaces\\IQrCodeRepository.cs",
+              "RelativeToolTip": "QRSystem.API\\Infrastructure\\Repositories\\Interfaces\\IQrCodeRepository.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:31:26.815Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 19,
+              "Title": "IFraudLogRepository.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Infrastructure\\Repositories\\Interfaces\\IFraudLogRepository.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Infrastructure\\Repositories\\Interfaces\\IFraudLogRepository.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Infrastructure\\Repositories\\Interfaces\\IFraudLogRepository.cs",
+              "RelativeToolTip": "QRSystem.API\\Infrastructure\\Repositories\\Interfaces\\IFraudLogRepository.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:30:14.021Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
+              "Title": "QrSettings.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\Settings\\QrSettings.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Core\\Settings\\QrSettings.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\Settings\\QrSettings.cs",
+              "RelativeToolTip": "QRSystem.API\\Core\\Settings\\QrSettings.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:26:35.951Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 21,
+              "Title": "ScanAttempt.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\Models\\ScanAttempt.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Core\\Models\\ScanAttempt.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\Models\\ScanAttempt.cs",
+              "RelativeToolTip": "QRSystem.API\\Core\\Models\\ScanAttempt.cs",
+              "ViewState": "AgIAAAkAAAAAAAAAAAA1wAMAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:24:16.929Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 22,
+              "Title": "FraudLog.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\Models\\FraudLog.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Core\\Models\\FraudLog.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\Models\\FraudLog.cs",
+              "RelativeToolTip": "QRSystem.API\\Core\\Models\\FraudLog.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAbAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:23:15.883Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 23,
+              "Title": "FraudReasons.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\Constants\\FraudReasons.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Core\\Constants\\FraudReasons.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\Constants\\FraudReasons.cs",
+              "RelativeToolTip": "QRSystem.API\\Core\\Constants\\FraudReasons.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:16:13.083Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 24,
+              "Title": "QrRotationService.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\BackgroundServices\\QrRotationService.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\BackgroundServices\\QrRotationService.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\BackgroundServices\\QrRotationService.cs",
+              "RelativeToolTip": "QRSystem.API\\BackgroundServices\\QrRotationService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAAOAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T07:59:14.801Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 25,
+              "Title": "QrCode.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\Models\\QrCode.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Core\\Models\\QrCode.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\Models\\QrCode.cs",
+              "RelativeToolTip": "QRSystem.API\\Core\\Models\\QrCode.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:23:51.463Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 26,
+              "Title": "GenericResponse.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\Models\\GenericResponse.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Core\\Models\\GenericResponse.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\Models\\GenericResponse.cs",
+              "RelativeToolTip": "QRSystem.API\\Core\\Models\\GenericResponse.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:23:32.238Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 27,
+              "Title": "ScanResults.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\Constants\\ScanResults.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Core\\Constants\\ScanResults.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\Constants\\ScanResults.cs",
+              "RelativeToolTip": "QRSystem.API\\Core\\Constants\\ScanResults.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:16:30.541Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 28,
+              "Title": "SessionStatsDto.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\DTOs\\SessionStatsDto.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Core\\DTOs\\SessionStatsDto.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\DTOs\\SessionStatsDto.cs",
+              "RelativeToolTip": "QRSystem.API\\Core\\DTOs\\SessionStatsDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:20:55.561Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 29,
+              "Title": "ScanResponseDto.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\DTOs\\ScanResponseDto.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Core\\DTOs\\ScanResponseDto.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\DTOs\\ScanResponseDto.cs",
+              "RelativeToolTip": "QRSystem.API\\Core\\DTOs\\ScanResponseDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:20:35.059Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 30,
+              "Title": "ScanRequestDto.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\DTOs\\ScanRequestDto.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Core\\DTOs\\ScanRequestDto.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\DTOs\\ScanRequestDto.cs",
+              "RelativeToolTip": "QRSystem.API\\Core\\DTOs\\ScanRequestDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:20:13.054Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 31,
+              "Title": "ScanAttemptDto.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\DTOs\\ScanAttemptDto.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Core\\DTOs\\ScanAttemptDto.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\DTOs\\ScanAttemptDto.cs",
+              "RelativeToolTip": "QRSystem.API\\Core\\DTOs\\ScanAttemptDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:19:44.836Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 32,
+              "Title": "QrCodeResponseDto.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\DTOs\\QrCodeResponseDto.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Core\\DTOs\\QrCodeResponseDto.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\DTOs\\QrCodeResponseDto.cs",
+              "RelativeToolTip": "QRSystem.API\\Core\\DTOs\\QrCodeResponseDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:19:22.049Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 33,
+              "Title": "FraudLogDto.cs",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\DTOs\\FraudLogDto.cs",
+              "RelativeDocumentMoniker": "QRSystem.API\\Core\\DTOs\\FraudLogDto.cs",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\Core\\DTOs\\FraudLogDto.cs",
+              "RelativeToolTip": "QRSystem.API\\Core\\DTOs\\FraudLogDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-09T08:18:54.944Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 34,
+              "Title": "QRSystem.API.csproj",
+              "DocumentMoniker": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\QRSystem.API.csproj",
+              "RelativeDocumentMoniker": "QRSystem.API\\QRSystem.API.csproj",
+              "ToolTip": "C:\\Users\\Oluwamisimi Gbadebo\\source\\repos\\QRSystem.API\\QRSystem.API\\QRSystem.API.csproj",
+              "RelativeToolTip": "QRSystem.API\\QRSystem.API.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-04-09T07:58:09.219Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
