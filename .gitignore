@@ -1,0 +1,70 @@
+# ======================
+# VIRTUAL ENVIRONMENT
+# ======================
+qrenv/
+venv/
+env/
+ENV/
+.venv/
+
+# ======================
+# PYTHON
+# ======================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# ======================
+# DJANGO
+# ======================
+*.log
+media/
+staticfiles/
+
+# SQLite (not used, but safe to ignore)
+db.sqlite3
+
+# Local settings / secrets
+local_settings.py
+
+# ======================
+# ENV FILE (VERY IMPORTANT)
+# ======================
+.env
+.env.*
+
+# ======================
+# MIGRATIONS (optional - DO NOT ignore unless resetting project)
+# ======================
+# */migrations/*.py
+# !*/migrations/__init__.py
+
+# ======================
+# IDE / EDITORS
+# ======================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ======================
+# OS FILES
+# ======================
+.DS_Store
+Thumbs.db
+
+# ======================
+# TEST / CACHE
+# ======================
+.pytest_cache/
+.coverage/
+htmlcov/
+
+# ======================
+# BUILD FILES
+# ======================
+build/
+dist/
+*.egg-info/
