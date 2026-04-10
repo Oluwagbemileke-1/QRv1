@@ -67,7 +67,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-ASGI_APPLICATION = "qr_attendance_project.asgi.application"
+
 CORS_ALLOW_ALL_ORIGINS = True
 ROOT_URLCONF = 'qr_attendance_project.urls'
 
