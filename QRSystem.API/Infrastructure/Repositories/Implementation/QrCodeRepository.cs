@@ -26,7 +26,7 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementations
             await _context.SaveChangesAsync();
 
             // cache the newly created QR immediately so the first scan hits cache
-            var cacheKey = $"active_qr_{entity.SessionId}";
+            var cacheKey = $"active_qr_{entity.EventId}";
             _cache.Set(cacheKey, entity, TimeSpan.FromSeconds(55));
         }
 
@@ -36,13 +36,13 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementations
             await _context.SaveChangesAsync();
 
             // update cache with the new version
-            var cacheKey = $"active_qr_{entity.SessionId}";
+            var cacheKey = $"active_qr_{entity.EventId}";
             _cache.Set(cacheKey, entity, TimeSpan.FromSeconds(55));
         }
 
-        public async Task<QrCode?> GetActiveQrBySessionAsync(Guid sessionId)
+        public async Task<QrCode?> GetActiveQrBySessionAsync(Guid eventId)
         {
-            var cacheKey = $"active_qr_{sessionId}";
+            var cacheKey = $"active_qr_{eventId}";
 
             // return from cache if available - avoids DB hit on every scan
             if (_cache.TryGetValue(cacheKey, out QrCode? cachedQr))
@@ -50,7 +50,7 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementations
 
             // not in cache - go to DB
             var qrCode = await _context.QrCodes
-                .Where(q => q.SessionId == sessionId
+                .Where(q => q.EventId == eventId
                          && q.IsActive
                          && q.ExpiresAt > DateTime.UtcNow)
                 .FirstOrDefaultAsync();
@@ -65,9 +65,9 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementations
             return qrCode;
         }
 
-        public async Task<IEnumerable<QrCode>> GetBySessionAsync(Guid sessionId)
+        public async Task<IEnumerable<QrCode>> GetBySessionAsync(Guid eventId)
             => await _context.QrCodes
-                .Where(q => q.SessionId == sessionId)
+                .Where(q => q.EventId == eventId)
                 .OrderByDescending(q => q.GeneratedAt)
                 .ToListAsync();
 
@@ -81,22 +81,22 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementations
             {
                 qr.Deactivate();
                 // clear cache so next scan doesnt get the deactivated QR
-                _cache.Remove($"active_qr_{qr.SessionId}");
+                _cache.Remove($"active_qr_{qr.EventId}");
             }
 
             await _context.SaveChangesAsync();
         }
 
-        public async Task<bool> SessionHasActiveQrAsync(Guid sessionId)
+        public async Task<bool> SessionHasActiveQrAsync(Guid eventId)
         {
-            var cacheKey = $"active_qr_{sessionId}";
+            var cacheKey = $"active_qr_{eventId}";
 
             // if its in cache it means theres an active QR
             if (_cache.TryGetValue(cacheKey, out _))
                 return true;
 
             return await _context.QrCodes
-                .AnyAsync(q => q.SessionId == sessionId
+                .AnyAsync(q => q.EventId == eventId
                             && q.IsActive
                             && q.ExpiresAt > DateTime.UtcNow);
         }

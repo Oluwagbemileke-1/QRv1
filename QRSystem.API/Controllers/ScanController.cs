@@ -62,80 +62,80 @@ namespace QRSystem.API.Controllers
             }
         }
 
-        // GET api/scan/session/{sessionId}
-        // get all scans for a session
-        [HttpGet("session/{sessionId}")]
-        public async Task<IActionResult> GetSessionScans(Guid sessionId)
+        // GET api/scan/event/{eventId}
+        // get all scans for an event
+        [HttpGet("event/{eventId}")]
+        public async Task<IActionResult> GetSessionScans(Guid eventId)
         {
             try
             {
-                _logger.LogInformation("Fetching all scans for SessionId: {SessionId}", sessionId);
-                var scans = await _scanService.GetSessionScansAsync(sessionId);
-                _logger.LogInformation("Retrieved {Count} scans for SessionId: {SessionId}", scans.Count(), sessionId);
+                _logger.LogInformation("Fetching all scans for EventId: {EventId}", eventId);
+                var scans = await _scanService.GetSessionScansAsync(eventId);
+                _logger.LogInformation("Retrieved {Count} scans for EventId: {EventId}", scans.Count(), eventId);
                 return Ok(GenericResponse<object>.Success(scans, "Scans retrieved successfully"));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching scans for SessionId: {SessionId}", sessionId);
+                _logger.LogError(ex, "Error fetching scans for EventId: {EventId}", eventId);
                 return StatusCode(500, GenericResponse<object>.Failure("An error occurred while fetching the scans", "500"));
             }
         }
 
-        // GET api/scan/session/{sessionId}/successful
+        // GET api/scan/event/{eventId}/successful
         // get only successful scans - who actually attended
-        [HttpGet("session/{sessionId}/successful")]
-        public async Task<IActionResult> GetSuccessfulScans(Guid sessionId)
+        [HttpGet("event/{eventId}/successful")]
+        public async Task<IActionResult> GetSuccessfulScans(Guid eventId)
         {
             try
             {
-                _logger.LogInformation("Fetching successful scans for SessionId: {SessionId}", sessionId);
-                var scans = await _scanService.GetSuccessfulScansAsync(sessionId);
-                _logger.LogInformation("Retrieved {Count} successful scans for SessionId: {SessionId}", scans.Count(), sessionId);
+                _logger.LogInformation("Fetching successful scans for EventId: {EventId}", eventId);
+                var scans = await _scanService.GetSuccessfulScansAsync(eventId);
+                _logger.LogInformation("Retrieved {Count} successful scans for EventId: {EventId}", scans.Count(), eventId);
                 return Ok(GenericResponse<object>.Success(scans, "Successful scans retrieved successfully"));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching successful scans for SessionId: {SessionId}", sessionId);
+                _logger.LogError(ex, "Error fetching successful scans for EventId: {EventId}", eventId);
                 return StatusCode(500, GenericResponse<object>.Failure("An error occurred while fetching successful scans", "500"));
             }
         }
 
-        // GET api/scan/session/{sessionId}/count
-        // get attendance count for a session - for dashboard
-        [HttpGet("session/{sessionId}/count")]
-        public async Task<IActionResult> GetAttendanceCount(Guid sessionId)
+        // GET api/scan/event/{eventId}/count
+        // get attendance count for a eventId - for dashboard
+        [HttpGet("event/{eventId}/count")]
+        public async Task<IActionResult> GetAttendanceCount(Guid eventId)
         {
             try
             {
-                _logger.LogInformation("Fetching attendance count for SessionId: {SessionId}", sessionId);
-                var scans = await _scanService.GetSuccessfulScansAsync(sessionId);
+                _logger.LogInformation("Fetching attendance count for EventId: {EventId}", eventId);
+                var scans = await _scanService.GetSuccessfulScansAsync(eventId);
                 var count = scans.Count();
-                _logger.LogInformation("Attendance count for SessionId: {SessionId} is {Count}", sessionId, count);
-                return Ok(GenericResponse<object>.Success(new { sessionId, attendanceCount = count }, "Attendance count retrieved successfully"));
+                _logger.LogInformation("Attendance count for EventId: {EventId} is {Count}", eventId, count);
+                return Ok(GenericResponse<object>.Success(new { eventId, attendanceCount = count }, "Attendance count retrieved successfully"));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching attendance count for SessionId: {SessionId}", sessionId);
+                _logger.LogError(ex, "Error fetching attendance count for EventId: {EventId}", eventId);
                 return StatusCode(500, GenericResponse<object>.Failure("An error occurred while fetching the attendance count", "500"));
             }
         }
 
-        // GET api/scan/session/{sessionId}/stats
-        // get analytics for a session
-        [HttpGet("session/{sessionId}/stats")]
-        public async Task<IActionResult> GetSessionStats(Guid sessionId)
+        // GET api/scan/event/{eventId}/stats
+        // get analytics for a event
+        [HttpGet("event/{eventId}/stats")]
+        public async Task<IActionResult> GetSessionStats(Guid eventId)
         {
             try
             {
-                _logger.LogInformation("Fetching session stats for SessionId: {SessionId}", sessionId);
-                var stats = await _scanService.GetSessionStatsAsync(sessionId);
-                _logger.LogInformation("Successfully retrieved stats for SessionId: {SessionId}", sessionId);
-                return Ok(GenericResponse<object>.Success(stats, "Session stats retrieved successfully"));
+                _logger.LogInformation("Fetching event stats for EventId: {EventId}", eventId);
+                var stats = await _scanService.GetSessionStatsAsync(eventId);
+                _logger.LogInformation("Successfully retrieved stats for EventId: {EventId}", eventId);
+                return Ok(GenericResponse<object>.Success(stats, "Event stats retrieved successfully"));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching session stats for SessionId: {SessionId}", sessionId);
-                return StatusCode(500, GenericResponse<object>.Failure("An error occurred while fetching session stats", "500"));
+                _logger.LogError(ex, "Error fetching event stats for EventId: {EventId}", eventId);
+                return StatusCode(500, GenericResponse<object>.Failure("An error occurred while fetching event stats", "500"));
             }
         }
     }

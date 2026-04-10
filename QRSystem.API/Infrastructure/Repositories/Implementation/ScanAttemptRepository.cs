@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using QRSystem.API.Core.Constants;
 using QRSystem.API.Core.Data;
 using QRSystem.API.Core.Models;
@@ -21,34 +22,34 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementations
             await _context.SaveChangesAsync();
         }
 
-        public async Task<bool> IpAlreadyScannedAsync(string ipAddress, Guid sessionId)
+        public async Task<bool> IpAlreadyScannedAsync(string ipAddress, Guid eventId)
             => await _context.ScanAttempts
                 .AnyAsync(s => s.IpAddress == ipAddress
-                            && s.SessionId == sessionId
+                            && s.EventId == eventId
                             && s.Result == ScanResults.Success);
 
-        public async Task<bool> UserAlreadyScannedAsync(string username, Guid sessionId)
+        public async Task<bool> UserAlreadyScannedAsync(string username, Guid eventId)
             => await _context.ScanAttempts
                 .AnyAsync(s => s.Username == username
-                            && s.SessionId == sessionId
+                            && s.EventId == eventId
                             && s.Result == ScanResults.Success);
 
-        public async Task<IEnumerable<ScanAttempt>> GetBySessionAsync(Guid sessionId)
+        public async Task<IEnumerable<ScanAttempt>> GetBySessionAsync(Guid eventId)
             => await _context.ScanAttempts
-                .Where(s => s.SessionId == sessionId)
+                .Where(s => s.EventId == eventId)
                 .OrderByDescending(s => s.ScannedAt)
                 .ToListAsync();
 
-        public async Task<IEnumerable<ScanAttempt>> GetSuccessfulScansBySessionAsync(Guid sessionId)
+        public async Task<IEnumerable<ScanAttempt>> GetSuccessfulScansBySessionAsync(Guid eventId)
             => await _context.ScanAttempts
-                .Where(s => s.SessionId == sessionId
+                .Where(s => s.EventId == eventId
                             && s.Result == ScanResults.Success)
                 .OrderByDescending(s => s.ScannedAt)
                 .ToListAsync();
 
-        public async Task<int> GetUniqueIpCountAsync(Guid sessionId)
+        public async Task<int> GetUniqueIpCountAsync(Guid eventId)
             => await _context.ScanAttempts
-                .Where(s => s.SessionId == sessionId)
+                .Where(s => s.EventId == eventId)
                 .Select(s => s.IpAddress)
                 .Distinct()
                 .CountAsync();

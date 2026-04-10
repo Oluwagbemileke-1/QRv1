@@ -32,31 +32,31 @@ namespace QR.API.Services.Implementations
         public async Task<bool> CheckForFraudAsync(
             string? ipAddress,
             string username,
-            Guid sessionId,
+            Guid eventId,
             QrCode? qrCode,
             string scannedPayload)
         {
             try
             {
                 _logger.LogDebug(
-                    "Running fraud checks for Username: {Username}, IP: {IpAddress}, SessionId: {SessionId}",
-                    username, ipAddress, sessionId);
+                    "Running fraud checks for Username: {Username}, IP: {IpAddress}, EventId: {EventId}",
+                    username, ipAddress, eventId);
 
                 // check 1 - QR does not exist
                 if (qrCode == null)
                 {
-                    _logger.LogWarning("Fraud check 1 failed — no active QR found. Username: {Username}, SessionId: {SessionId}", username, sessionId);
-                    await LogFraudAsync(ipAddress, username, sessionId, Guid.Empty,
-                        FraudReasons.Tampered, details: "No active QR found for this session");
+                    _logger.LogWarning("Fraud check 1 failed — no active QR found. Username: {Username}, EventId: {EventId}", username, eventId);
+                    await LogFraudAsync(ipAddress, username, eventId, Guid.Empty,
+                        FraudReasons.Tampered, details: "No active QR found for this event");
                     return true;
                 }
                 // check 2 - QR has expired
                 if (qrCode.IsExpired())
                 {
                     _logger.LogWarning(
-                        "Fraud check 2 failed — QR code expired. Username: {Username}, QrCodeId: {QrCodeId}, SessionId: {SessionId}",
-                        username, qrCode.Id, sessionId);
-                    await LogFraudAsync(ipAddress, username, sessionId, qrCode.Id,
+                        "Fraud check 2 failed — QR code expired. Username: {Username}, QrCodeId: {QrCodeId}, EventId: {EventId}",
+                        username, qrCode.Id, eventId);
+                    await LogFraudAsync(ipAddress, username, eventId, qrCode.Id,
                         FraudReasons.ExpiredQrCode, details: "Attempted to use an expired QR code");
                     return true;
                 }
@@ -65,41 +65,41 @@ namespace QR.API.Services.Implementations
                 if (!VerifyPayload(scannedPayload))
                 {
                     _logger.LogWarning(
-                        "Fraud check 3 failed — payload signature mismatch. Username: {Username}, IP: {IpAddress}, SessionId: {SessionId}",
-                        username, ipAddress, sessionId);
-                    await LogFraudAsync(ipAddress, username, sessionId, qrCode.Id,
+                        "Fraud check 3 failed — payload signature mismatch. Username: {Username}, IP: {IpAddress}, EventId: {EventId}",
+                        username, ipAddress, eventId);
+                    await LogFraudAsync(ipAddress, username, eventId, qrCode.Id,
                         FraudReasons.Tampered, details: "Payload signature mismatch detected");
                     return true;
                 }
 
-                // fetch all session scans ONCE and reuse for all remaining checks
+                // fetch all event scans ONCE and reuse for all remaining checks
                 // this replaces 4 separate DB calls with 1
-                var sessionScans = (await _scanRepository.GetBySessionAsync(sessionId)).ToList();
-                _logger.LogDebug("Loaded {Count} existing scans for SessionId: {SessionId}", sessionScans.Count, sessionId);
+                var sessionScans = (await _scanRepository.GetBySessionAsync(eventId)).ToList();
+                _logger.LogDebug("Loaded {Count} existing scans for EventId: {EventId}", sessionScans.Count, eventId);
 
-                // check 4 - same IP already has a successful scan in this session
+                // check 4 - same IP already has a successful scan in this event
                 var duplicateIp = sessionScans.Any(s => s.IpAddress == ipAddress && s.Result == ScanResults.Success);
                 if (duplicateIp)
                 {
                     _logger.LogWarning(
-                        "Fraud check 4 failed — duplicate IP with successful scan. IP: {IpAddress}, SessionId: {SessionId}",
-                        ipAddress, sessionId);
-                    await LogFraudAsync(ipAddress, username, sessionId, qrCode.Id,
+                        "Fraud check 4 failed — duplicate IP with successful scan. IP: {IpAddress}, EventId: {EventId}",
+                        ipAddress, eventId);
+                    await LogFraudAsync(ipAddress, username, eventId, qrCode.Id,
                         FraudReasons.DuplicateIp,
-                        details: $"IP {ipAddress} already used to scan in this session");
+                        details: $"IP {ipAddress} already used to scan in this event");
                     return true;
                 }
 
-                // check 5 - multiple accounts scanning from same IP in this session
+                // check 5 - multiple accounts scanning from same IP in this event
                 var scansFromIp = sessionScans.Where(s => s.IpAddress == ipAddress).ToList();
                 if (scansFromIp.Count > 1)
                 {
                     _logger.LogWarning(
-                        "Fraud check 5 failed — multiple accounts from same IP. IP: {IpAddress}, Count: {Count}, SessionId: {SessionId}",
-                        ipAddress, scansFromIp.Count, sessionId);
-                    await LogFraudAsync(ipAddress, username, sessionId, qrCode.Id,
+                        "Fraud check 5 failed — multiple accounts from same IP. IP: {IpAddress}, Count: {Count}, EventId: {EventId}",
+                        ipAddress, scansFromIp.Count, eventId);
+                    await LogFraudAsync(ipAddress, username, eventId, qrCode.Id,
                         FraudReasons.MultipleAccountsSameIp,
-                        details: $"IP {ipAddress} used by multiple accounts in this session");
+                        details: $"IP {ipAddress} used by multiple accounts in this event");
                     return true;
                 }
 
@@ -113,36 +113,36 @@ namespace QR.API.Services.Implementations
                 {
                     var secondsAgo = (DateTime.UtcNow - lastScan.ScannedAt).TotalSeconds;
                     _logger.LogWarning(
-                        "Fraud check 6 failed — rapid rescan. Username: {Username} scanned {Seconds:F1}s ago, SessionId: {SessionId}",
-                        username, secondsAgo, sessionId);
-                    await LogFraudAsync(ipAddress, username, sessionId, qrCode.Id,
+                        "Fraud check 6 failed — rapid rescan. Username: {Username} scanned {Seconds:F1}s ago, EventId: {EventId}",
+                        username, secondsAgo, eventId);
+                    await LogFraudAsync(ipAddress, username, eventId, qrCode.Id,
                         FraudReasons.RapidRescan,
                         details: $"{username} scanned again within 30 seconds");
                     return true;
                 }
 
-                // check 7 - user already attended this session
+                // check 7 - user already attended this event
                 var alreadyAttended = sessionScans.Any(s => s.Username == username && s.Result == ScanResults.Success);
                 if (alreadyAttended)
                 {
                     _logger.LogWarning(
-                        "Fraud check 7 failed — user already attended. Username: {Username}, SessionId: {SessionId}",
-                        username, sessionId);
-                    await LogFraudAsync(ipAddress, username, sessionId, qrCode.Id,
+                        "Fraud check 7 failed — user already attended. Username: {Username}, EventId: {EventId}",
+                        username, eventId);
+                    await LogFraudAsync(ipAddress, username, eventId, qrCode.Id,
                         FraudReasons.AlreadyAttended,
-                        details: $"{username} already marked attendance for this session");
+                        details: $"{username} already marked attendance for this event");
                     return true;
                 }
 
                 _logger.LogDebug(
-                    "All fraud checks passed for Username: {Username}, IP: {IpAddress}, SessionId: {SessionId}",
-                    username, ipAddress, sessionId);
+                    "All fraud checks passed for Username: {Username}, IP: {IpAddress}, EventId: {EventId}",
+                    username, ipAddress, eventId);
 
                 return false;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error running fraud checks for Username: {Username}, SessionId: {SessionId}", username, sessionId);
+                _logger.LogError(ex, "Error running fraud checks for Username: {Username}, EventId: {EventId}", username, eventId);
                 throw;
             }
         }
@@ -150,7 +150,7 @@ namespace QR.API.Services.Implementations
         public async Task LogFraudAsync(
             string? ipAddress,
             string username,
-            Guid sessionId,
+            Guid eventId,
             Guid? qrCodeId,
             string reason,
             string? details = null)
@@ -158,13 +158,13 @@ namespace QR.API.Services.Implementations
             try
             {
                 _logger.LogInformation(
-                    "Logging fraud event — Username: {Username}, IP: {IpAddress}, SessionId: {SessionId}, Reason: {Reason}",
-                    username, ipAddress, sessionId, reason);
+                    "Logging fraud event — Username: {Username}, IP: {IpAddress}, EventId: {EventId}, Reason: {Reason}",
+                    username, ipAddress, eventId, reason);
 
                 var fraudLog = FraudLog.Create(
                     username: username,
                     ipAddress: ipAddress,
-                    sessionId: sessionId,
+                    eventId: eventId,
                     qrCodeId: qrCodeId,
                     reason: reason,
                     details: details
@@ -174,18 +174,18 @@ namespace QR.API.Services.Implementations
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error logging fraud event for Username: {Username}, SessionId: {SessionId}", username, sessionId);
+                _logger.LogError(ex, "Error logging fraud event for Username: {Username}, EventId: {EventId}", username, eventId);
                 throw;
             }
         }
 
-        public async Task<IEnumerable<FraudLogDto>> GetSessionFraudLogsAsync(Guid sessionId)
+        public async Task<IEnumerable<FraudLogDto>> GetSessionFraudLogsAsync(Guid eventId)
         {
             try
             {
-                _logger.LogInformation("Fetching fraud logs for SessionId: {SessionId}", sessionId);
+                _logger.LogInformation("Fetching fraud logs for EventId: {EventId}", eventId);
 
-                var logs = await _fraudLogRepository.GetBySessionAsync(sessionId);
+                var logs = await _fraudLogRepository.GetBySessionAsync(eventId);
                 var result = logs.Select(f => new FraudLogDto
                 {
                     Username = f.Username,
@@ -195,28 +195,28 @@ namespace QR.API.Services.Implementations
                     DetectedAt = f.DetectedAt
                 }).ToList();
 
-                _logger.LogInformation("Retrieved {Count} fraud logs for SessionId: {SessionId}", result.Count, sessionId);
+                _logger.LogInformation("Retrieved {Count} fraud logs for EventId: {EventId}", result.Count, eventId);
                 return result;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching fraud logs for SessionId: {SessionId}", sessionId);
+                _logger.LogError(ex, "Error fetching fraud logs for EventId: {EventId}", eventId);
                 throw;
             }
         }
 
-        public async Task<int> GetFraudCountAsync(Guid sessionId)
+        public async Task<int> GetFraudCountAsync(Guid eventId)
         {
             try
             {
-                _logger.LogDebug("Fetching fraud count for SessionId: {SessionId}", sessionId);
-                var count = await _fraudLogRepository.GetFraudCountBySessionAsync(sessionId);
-                _logger.LogDebug("Fraud count for SessionId: {SessionId} is {Count}", sessionId, count);
+                _logger.LogDebug("Fetching fraud count for EventId: {EventId}", eventId);
+                var count = await _fraudLogRepository.GetFraudCountBySessionAsync(eventId);
+                _logger.LogDebug("Fraud count for EventId: {EventId} is {Count}", eventId, count);
                 return count;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching fraud count for SessionId: {SessionId}", sessionId);
+                _logger.LogError(ex, "Error fetching fraud count for EventId: {EventId}", eventId);
                 throw;
             }
         }
@@ -231,11 +231,11 @@ namespace QR.API.Services.Implementations
                 return false;
             }
 
-            var sessionId = parts[0];
+            var eventId = parts[0];
             var expiryTicks = parts[1];
             var signature = parts[2];
 
-            var data = $"{sessionId}:{expiryTicks}";
+            var data = $"{eventId}:{expiryTicks}";
 
             using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_settings.SecretKey));
             var computedBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
@@ -245,7 +245,7 @@ namespace QR.API.Services.Implementations
 
             if (!isValidSignature)
             {
-                _logger.LogWarning("Payload signature verification failed for SessionId: {SessionId}", sessionId);
+                _logger.LogWarning("Payload signature verification failed for EventId: {eventId}", eventId);
                 return false;
             }
 
@@ -253,7 +253,7 @@ namespace QR.API.Services.Implementations
 
             if (DateTime.UtcNow > expiry)
             {
-                _logger.LogWarning("Payload expired for SessionId: {SessionId}", sessionId);
+                _logger.LogWarning("Payload expired for EventId: {EventId}", eventId);
                 return false;
             }
 

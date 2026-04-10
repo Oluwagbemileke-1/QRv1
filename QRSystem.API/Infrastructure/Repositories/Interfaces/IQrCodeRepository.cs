@@ -7,8 +7,8 @@ namespace QRSystem.API.Infrastructure.Repositories.Interfaces
         Task<QrCode?> GetByIdAsync(Guid id);
         Task AddAsync(QrCode entity);
         Task UpdateAsync(QrCode entity);
-        Task<QrCode?> GetActiveQrBySessionAsync(Guid sessionId);
+        Task<QrCode?> GetActiveQrBySessionAsync(Guid eventId);
         Task DeactivateExpiredQrCodesAsync();
-        Task<bool> SessionHasActiveQrAsync(Guid sessionId);
+        Task<bool> SessionHasActiveQrAsync(Guid eventId);
     }
 }

@@ -23,7 +23,7 @@ namespace QRSystem.API.Core.Data
                 entity.Property(e => e.ExpiresAt).IsRequired().HasColumnType("timestamp with time zone");
                 entity.Property(e => e.IsActive).HasDefaultValue(true);
 
-                entity.HasIndex(e => new { e.SessionId, e.IsActive });
+                entity.HasIndex(e => new { e.EventId, e.IsActive });
             });
 
             modelBuilder.Entity<ScanAttempt>(entity =>
@@ -35,7 +35,7 @@ namespace QRSystem.API.Core.Data
                 entity.Property(e => e.Location).HasMaxLength(100);
                 entity.Property(e => e.Result).IsRequired();
 
-                entity.HasIndex(e => new { e.IpAddress, e.SessionId });
+                entity.HasIndex(e => new { e.IpAddress, e.EventId });
 
                 entity.HasOne(e => e.QrCode)
                       .WithMany(q => q.ScanAttempts)

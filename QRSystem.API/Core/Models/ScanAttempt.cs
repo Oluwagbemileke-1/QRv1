@@ -11,7 +11,7 @@ namespace QRSystem.API.Core.Models
         public DateTime ScannedAt { get; private set; }
         public string Result { get; private set; } = string.Empty;
         public Guid? QrCodeId { get; private set; }
-        public Guid SessionId { get; private set; }
+        public Guid EventId { get; private set; }
 
         // Navigation
         public QrCode QrCode { get; private set; } = null!;
@@ -22,7 +22,7 @@ namespace QRSystem.API.Core.Models
             string username,
             string ipAddress,
             Guid? qrCodeId,
-            Guid sessionId,
+            Guid eventId,
             string result,
             string? location = null)
         {
@@ -32,7 +32,7 @@ namespace QRSystem.API.Core.Models
                 Username = username,
                 IpAddress = ipAddress,
                 QrCodeId = qrCodeId,
-                SessionId = sessionId,
+                EventId = eventId,
                 Result = result,
                 Location = location,
                 ScannedAt = DateTime.UtcNow

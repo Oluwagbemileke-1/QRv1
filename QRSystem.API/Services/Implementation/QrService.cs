@@ -26,36 +26,36 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
             _logger = logger;
         }
 
-        public async Task<QrCodeResponseDto> GenerateQrAsync(Guid sessionId)
+        public async Task<QrCodeResponseDto> GenerateQrAsync(Guid eventId)
         {
             try
             {
-                _logger.LogInformation("Starting QR generation for SessionId: {SessionId}", sessionId);
+                _logger.LogInformation("Starting QR generation for EventId: {EventId}", eventId);
 
-                // deactivate any expired QRs for this session first
-                _logger.LogDebug("Deactivating expired QR codes before generating new one for SessionId: {SessionId}", sessionId);
+                // deactivate any expired QRs for this event first
+                _logger.LogDebug("Deactivating expired QR codes before generating new one for EventId: {EventId}", eventId);
                 await _qrCodeRepository.DeactivateExpiredQrCodesAsync();
 
                 // build the payload - what gets encoded into the QR image
-                var payload = GeneratePayload(sessionId);
-                _logger.LogDebug("Payload generated for SessionId: {SessionId}", sessionId);
+                var payload = GeneratePayload(eventId);
+                _logger.LogDebug("Payload generated for EventId: {EventId}", eventId);
 
                 // build the QR image from the payload
                 var imageUrl = GenerateQrImage(payload);
-                _logger.LogDebug("QR image generated for SessionId: {SessionId}", sessionId);
+                _logger.LogDebug("QR image generated for EventId: {EventId}", eventId);
 
-                var qrCode = QrCode.Create(sessionId, payload, imageUrl);
+                var qrCode = QrCode.Create(eventId, payload, imageUrl);
                 await _qrCodeRepository.AddAsync(qrCode);
 
                 _logger.LogInformation(
-                    "QR code created successfully. QrCodeId: {QrCodeId}, SessionId: {SessionId}, ExpiresAt: {ExpiresAt}",
-                    qrCode.Id, sessionId, qrCode.ExpiresAt);
+                    "QR code created successfully. QrCodeId: {QrCodeId}, EventId: {EventId}, ExpiresAt: {ExpiresAt}",
+                    qrCode.Id, eventId, qrCode.ExpiresAt);
 
                 // map model → DTO, payload never leaves this layer
                 return new QrCodeResponseDto
                 {
                     Id = qrCode.Id,
-                    SessionId = qrCode.SessionId,
+                    EventId = qrCode.EventId,
                     ImageUrl = qrCode.ImageUrl,
                     GeneratedAt = qrCode.GeneratedAt,
                     ExpiresAt = qrCode.ExpiresAt,
@@ -64,7 +64,7 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error generating QR code for SessionId: {SessionId}", sessionId);
+                _logger.LogError(ex, "Error generating QR code for EventId: {EventId}", eventId);
                 throw;
             }
         }
@@ -84,10 +84,10 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
             }
         }
 
-        private string GeneratePayload(Guid sessionId)
+        private string GeneratePayload(Guid eventId)
         {
             var expiryTicks = DateTime.UtcNow.AddMinutes(1).Ticks;
-            var data = $"{sessionId}:{expiryTicks}";
+            var data = $"{eventId}:{expiryTicks}";
 
             using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_settings.SecretKey));
             var signatureBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(data));

@@ -18,9 +18,9 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementations
             await _context.SaveChangesAsync();
         }
 
-        public async Task<IEnumerable<FraudLog>> GetBySessionAsync(Guid sessionId)
+        public async Task<IEnumerable<FraudLog>> GetBySessionAsync(Guid eventId)
             => await _context.FraudLogs
-                .Where(f => f.SessionId == sessionId)
+                .Where(f => f.EventId == eventId)
                 .OrderByDescending(f => f.DetectedAt)
                 .ToListAsync();
 
@@ -36,9 +36,9 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementations
                 .OrderByDescending(f => f.DetectedAt)
                 .ToListAsync();
 
-        public async Task<int> GetFraudCountBySessionAsync(Guid sessionId)
+        public async Task<int> GetFraudCountBySessionAsync(Guid eventId)
             => await _context.FraudLogs
-                .CountAsync(f => f.SessionId == sessionId);
+                .CountAsync(f => f.EventId == eventId);
 
         public async Task<bool> IpHasBeenFlaggedAsync(string ipAddress)
             => await _context.FraudLogs

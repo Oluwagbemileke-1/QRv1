@@ -10,18 +10,18 @@ namespace QRSystem.API.Core.Models
         public DateTime GeneratedAt { get; private set; }
         public DateTime ExpiresAt { get; private set; }
         public bool IsActive { get; private set; }
-        public Guid SessionId { get; private set; }
+        public Guid EventId { get; private set; }
 
         public ICollection<ScanAttempt> ScanAttempts { get; private set; } = new List<ScanAttempt>();
 
         private QrCode() { }
 
-        public static QrCode Create(Guid sessionId, string payload, string imageUrl)
+        public static QrCode Create(Guid eventId, string payload, string imageUrl)
         {
             return new QrCode
             {
                 Id = Guid.NewGuid(),
-                SessionId = sessionId,
+                EventId = eventId,
                 Payload = payload,
                 ImageUrl = imageUrl,
                 GeneratedAt = DateTime.UtcNow,

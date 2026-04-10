@@ -47,7 +47,7 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                     };
                 }
 
-                var sessionId = Guid.Parse(parts[0]);
+                var eventId = Guid.Parse(parts[0]);
                 var expiryTicks = parts[1];
                 var signature = parts[2];
                 var data = $"{parts[0]}:{parts[1]}";
@@ -58,7 +58,7 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
 
                 if (computedSignature != signature)
                 {
-                    _logger.LogWarning("Invalid signature for SessionId: {SessionId}", sessionId);
+                    _logger.LogWarning("Invalid signature for EventId: {EventId}", eventId);
                     return new ScanResponseDto
                     {
                         Result = ScanResults.InvalidPayload,
@@ -71,7 +71,7 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                 var expiry = new DateTime(long.Parse(expiryTicks), DateTimeKind.Utc);
                 if (DateTime.UtcNow > expiry)
                 {
-                    _logger.LogWarning("Expired QR for SessionId: {SessionId}", sessionId);
+                    _logger.LogWarning("Expired QR for EventId: {EventId}", eventId);
                     return new ScanResponseDto
                     {
                         Result = ScanResults.Expired,
@@ -81,7 +81,7 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                 }
 
                 // 4. Look up active QR code
-                var qrCode = await _qrCodeRepository.GetActiveQrBySessionAsync(sessionId);
+                var qrCode = await _qrCodeRepository.GetActiveQrBySessionAsync(eventId);
                 if (qrCode == null)
                 {
                     return new ScanResponseDto
@@ -94,13 +94,13 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
 
                 // 5. Run fraud checks (duplicate IP, rapid rescan, already attended etc.)
                 var isFraud = await _fraudService.CheckForFraudAsync(
-                    ipAddress, username, sessionId, qrCode, payload
+                    ipAddress, username, eventId, qrCode, payload
                 );
 
                 if (isFraud)
                 {
                     await _scanRepository.AddAsync(ScanAttempt.Create(
-                        username, ipAddress, qrCode.Id, sessionId, ScanResults.Fraud
+                        username, ipAddress, qrCode.Id, eventId, ScanResults.Fraud
                     ));
 
                     return new ScanResponseDto
@@ -113,7 +113,7 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
 
                 // 6. Mark attendance
                 await _scanRepository.AddAsync(ScanAttempt.Create(
-                    username, ipAddress, qrCode.Id, sessionId, ScanResults.Success
+                    username, ipAddress, qrCode.Id, eventId, ScanResults.Success
                 ));
 
                 // 7. Deactivate QR so it can't be reused
@@ -134,13 +134,13 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
             }
         }
 
-        public async Task<IEnumerable<ScanAttemptDto>> GetSessionScansAsync(Guid sessionId)
+        public async Task<IEnumerable<ScanAttemptDto>> GetSessionScansAsync(Guid eventId)
         {
             try
             {
-                _logger.LogInformation("Fetching all scans for SessionId: {SessionId}", sessionId);
+                _logger.LogInformation("Fetching all scans for EventId: {EventId}", eventId);
 
-                var scans = await _scanRepository.GetBySessionAsync(sessionId);
+                var scans = await _scanRepository.GetBySessionAsync(eventId);
                 var result = scans.Select(s => new ScanAttemptDto
                 {
                     Username = s.Username,
@@ -150,23 +150,23 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                     ScannedAt = s.ScannedAt
                 }).ToList();
 
-                _logger.LogInformation("Retrieved {Count} scans for SessionId: {SessionId}", result.Count, sessionId);
+                _logger.LogInformation("Retrieved {Count} scans for EventId: {EventId}", result.Count, eventId);
                 return result;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching scans for SessionId: {SessionId}", sessionId);
+                _logger.LogError(ex, "Error fetching scans for EventId: {EventId}", eventId);
                 throw;
             }
         }
 
-        public async Task<IEnumerable<ScanAttemptDto>> GetSuccessfulScansAsync(Guid sessionId)
+        public async Task<IEnumerable<ScanAttemptDto>> GetSuccessfulScansAsync(Guid eventId)
         {
             try
             {
-                _logger.LogInformation("Fetching successful scans for SessionId: {SessionId}", sessionId);
+                _logger.LogInformation("Fetching successful scans for EventId: {EventId}", eventId);
 
-                var scans = await _scanRepository.GetSuccessfulScansBySessionAsync(sessionId);
+                var scans = await _scanRepository.GetSuccessfulScansBySessionAsync(eventId);
                 var result = scans.Select(s => new ScanAttemptDto
                 {
                     Username = s.Username,
@@ -176,30 +176,30 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                     ScannedAt = s.ScannedAt
                 }).ToList();
 
-                _logger.LogInformation("Retrieved {Count} successful scans for SessionId: {SessionId}", result.Count, sessionId);
+                _logger.LogInformation("Retrieved {Count} successful scans for EventId: {EventId}", result.Count, eventId);
                 return result;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching successful scans for SessionId: {SessionId}", sessionId);
+                _logger.LogError(ex, "Error fetching successful scans for EventId {EventId}", eventId);
                 throw;
             }
         }
 
-        public async Task<SessionStatsDto> GetSessionStatsAsync(Guid sessionId)
+        public async Task<EventStatsDto> GetSessionStatsAsync(Guid eventId)
         {
             try
             {
-                _logger.LogInformation("Fetching session stats for SessionId: {SessionId}", sessionId);
+                _logger.LogInformation("Fetching event stats for EventId: {EventId}", eventId);
 
-                var allScans = await _scanRepository.GetBySessionAsync(sessionId);
-                var successfulScans = await _scanRepository.GetSuccessfulScansBySessionAsync(sessionId);
-                var fraudCount = await _fraudService.GetFraudCountAsync(sessionId);
-                var uniqueIps = await _scanRepository.GetUniqueIpCountAsync(sessionId);
+                var allScans = await _scanRepository.GetBySessionAsync(eventId);
+                var successfulScans = await _scanRepository.GetSuccessfulScansBySessionAsync(eventId);
+                var fraudCount = await _fraudService.GetFraudCountAsync(eventId);
+                var uniqueIps = await _scanRepository.GetUniqueIpCountAsync(eventId);
 
-                var stats = new SessionStatsDto
+                var stats = new EventStatsDto
                 {
-                    SessionId = sessionId,
+                    EventId = eventId,
                     TotalScans = allScans.Count(),
                     SuccessfulScans = successfulScans.Count(),
                     FraudAttempts = fraudCount,
@@ -207,14 +207,14 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                 };
 
                 _logger.LogInformation(
-                    "Stats for SessionId: {SessionId} — Total: {Total}, Successful: {Successful}, Fraud: {Fraud}, UniqueIps: {UniqueIps}",
-                    sessionId, stats.TotalScans, stats.SuccessfulScans, stats.FraudAttempts, stats.UniqueIps);
+                    "Stats for EventId: {EventId} — Total: {Total}, Successful: {Successful}, Fraud: {Fraud}, UniqueIps: {UniqueIps}",
+                    eventId, stats.TotalScans, stats.SuccessfulScans, stats.FraudAttempts, stats.UniqueIps);
 
                 return stats;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching session stats for SessionId: {SessionId}", sessionId);
+                _logger.LogError(ex, "Error fetching event stats for EventId: {Eventd}", eventId);
                 throw;
             }
         }

@@ -8,19 +8,19 @@ namespace QRSystem.API.Services.Interfaces
         Task<bool> CheckForFraudAsync(
             string ipAddress,
             string username,
-            Guid sessionId,
+            Guid eventId,
             QrCode? qrCode,
             string scannedPayload);
 
         Task LogFraudAsync(
             string ipAddress,
             string username,
-            Guid sessionId,
+            Guid eventId,
             Guid? qrCodeId,
             string reason,
             string? details = null);
 
-        Task<IEnumerable<FraudLogDto>> GetSessionFraudLogsAsync(Guid sessionId);
-        Task<int> GetFraudCountAsync(Guid sessionId);
+        Task<IEnumerable<FraudLogDto>> GetSessionFraudLogsAsync(Guid eventId);
+        Task<int> GetFraudCountAsync(Guid eventId);
     }
 }

@@ -9,7 +9,7 @@ namespace QRSystem.API.Core.Models
         public string Reason { get; private set; }
         public string? Details { get; private set; }
         public DateTime DetectedAt { get; private set; }
-        public Guid SessionId { get; private set; }
+        public Guid EventId { get; private set; }
         public Guid? QrCodeId { get; private set; }
 
         private FraudLog() { }
@@ -17,7 +17,7 @@ namespace QRSystem.API.Core.Models
         public static FraudLog Create(
             string username,
             string ipAddress,
-            Guid sessionId,
+            Guid eventId,
             Guid? qrCodeId,
             string reason,
             string? details = null)
@@ -27,7 +27,7 @@ namespace QRSystem.API.Core.Models
                 Id = Guid.NewGuid(),
                 Username = username,
                 IpAddress = ipAddress,
-                SessionId = sessionId,
+                EventId = eventId,
                 QrCodeId = qrCodeId,
                 Reason = reason,
                 Details = details,

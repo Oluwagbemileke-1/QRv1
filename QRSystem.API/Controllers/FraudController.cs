@@ -17,40 +17,40 @@ namespace QRSystem.API.Controllers
             _logger = logger;
         }
 
-        // GET api/fraud/session/{sessionId}
-        // get all fraud logs for a session
-        [HttpGet("session/{sessionId}")]
-        public async Task<IActionResult> GetSessionFraudLogs(Guid sessionId)
+        // GET api/fraud/event/{eventId}
+        // get all fraud logs for an event
+        [HttpGet("event/{eventId}")]
+        public async Task<IActionResult> GetSessionFraudLogs(Guid eventId)
         {
             try
             {
-                _logger.LogInformation("Fetching fraud logs for SessionId: {SessionId}", sessionId);
-                var logs = await _fraudService.GetSessionFraudLogsAsync(sessionId);
-                _logger.LogInformation("Retrieved {Count} fraud logs for SessionId: {SessionId}", logs.Count(), sessionId);
+                _logger.LogInformation("Fetching fraud logs for eventId: {eventId}", eventId);
+                var logs = await _fraudService.GetSessionFraudLogsAsync(eventId);
+                _logger.LogInformation("Retrieved {Count} fraud logs for EventId: {EventId}", logs.Count(), eventId);
                 return Ok(GenericResponse<object>.Success(logs, "Fraud logs retrieved successfully"));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching fraud logs for SessionId: {SessionId}", sessionId);
+                _logger.LogError(ex, "Error fetching fraud logs for EventId: {EventId}", eventId);
                 return StatusCode(500, GenericResponse<object>.Failure("An error occurred while fetching fraud logs", "500"));
             }
         }
 
-        // GET api/fraud/session/{sessionId}/count
-        // get total fraud count for a session - for dashboard
-        [HttpGet("session/{sessionId}/count")]
-        public async Task<IActionResult> GetFraudCount(Guid sessionId)
+        // GET api/fraud/event/{eventId}/count
+        // get total fraud count for an event - for dashboard
+        [HttpGet("event/{eventId}/count")]
+        public async Task<IActionResult> GetFraudCount(Guid eventId)
         {
             try
             {
-                _logger.LogInformation("Fetching fraud count for SessionId: {SessionId}", sessionId);
-                var count = await _fraudService.GetFraudCountAsync(sessionId);
-                _logger.LogInformation("Fraud count for SessionId: {SessionId} is {Count}", sessionId, count);
-                return Ok(GenericResponse<object>.Success(new { sessionId, fraudCount = count }, "Fraud count retrieved successfully"));
+                _logger.LogInformation("Fetching fraud count for EventId: {EventId}", eventId);
+                var count = await _fraudService.GetFraudCountAsync(eventId);
+                _logger.LogInformation("Fraud count for EventId: {EventId} is {Count}", eventId, count);
+                return Ok(GenericResponse<object>.Success(new { eventId, fraudCount = count }, "Fraud count retrieved successfully"));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching fraud count for SessionId: {SessionId}", sessionId);
+                _logger.LogError(ex, "Error fetching fraud count for EventId: {EventId}", eventId);
                 return StatusCode(500, GenericResponse<object>.Failure("An error occurred while fetching fraud count", "500"));
             }
         }

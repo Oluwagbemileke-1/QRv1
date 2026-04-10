@@ -1,8 +1,8 @@
 ﻿namespace QRSystem.API.Core.DTOs
 {
-    public class SessionStatsDto
+    public class EventStatsDto
     {
-        public Guid SessionId { get; set; }
+        public Guid EventId { get; set; }
         public int TotalScans { get; set; }
         public int SuccessfulScans { get; set; }
         public int FraudAttempts { get; set; }
