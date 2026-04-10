@@ -18,8 +18,7 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib.pagesizes import landscape, A4,A3
 from datetime import timedelta
 from rest_framework.pagination import PageNumberPagination
-from asgiref.sync import async_to_sync
-from channels.layers import get_channel_layer
+
 
 # Create your views here.
 
