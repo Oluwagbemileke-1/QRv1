@@ -52,7 +52,6 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'drf_yasg',
     'notifications',
-    'channels',
     'corsheaders',
 
 ]
@@ -100,7 +99,9 @@ DATABASES = {
         'PASSWORD': os.getenv('DB_PASSWORD'),
         'HOST': os.getenv('DB_HOST'),
         'PORT': os.getenv('DB_PORT'),
-        
+        'OPTIONS' : {
+            'sslmode': 'require',
+        }
         
     }
 }

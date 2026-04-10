@@ -12,7 +12,6 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from django.http import HttpResponse
 from .utils import this_week_range,parse_datetime
-import re
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib.pagesizes import landscape, A4,A3
