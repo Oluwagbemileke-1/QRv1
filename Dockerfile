@@ -3,10 +3,10 @@ WORKDIR /app
 
 COPY . .
 
-WORKDIR /app/net-api   
-RUN dotnet publish -c Release -o out
+RUN dotnet publish QRSystem.API/QRSystem.API.csproj -c Release -o out
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
-COPY --from=build /app/net-api/out .
-ENTRYPOINT ["dotnet", "QRSystem.API.dll"]
+COPY --from=build /app/out .
+
+CMD ["dotnet", "QRSystem.API.dll"]
