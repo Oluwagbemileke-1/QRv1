@@ -8,7 +8,6 @@ User = settings.AUTH_USER_MODEL
 class Attendance(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
-    qr_data = models.TextField(null=True, blank=True)
     scan_time = models.DateTimeField(auto_now_add=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     device_info = models.TextField(null=True, blank=True)
@@ -20,3 +19,4 @@ class Attendance(models.Model):
         ordering =['-scan_time']
     def __str__(self):
         return f"{self.user} - {self.event.title}"
+    
