@@ -70,11 +70,10 @@ app.UseSerilogRequestLogging();
 
 app.MapGet("/", () => "API is running");
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
+
     app.UseSwagger();
     app.UseSwaggerUI();
-}
+
 
 app.UseHttpsRedirection();
 
