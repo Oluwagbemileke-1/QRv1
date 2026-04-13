@@ -68,6 +68,7 @@ var app = builder.Build();
 
 app.UseSerilogRequestLogging();
 
+app.MapGet("/", () => "API is running");
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
