@@ -143,21 +143,6 @@ def check_in(request):
         longitude=userlon
     )
 
-    # channel_layer = get_channel_layer()
-
-    # async_to_sync(channel_layer.group_send)(
-    #     f"attendance_{event.id}",
-    #     {
-    #         "type": "attendance_update",
-    #         "data": {
-    #             "event_id": event.id,
-    #             "event": event.title,
-    #             "live_count": Attendance.objects.filter(event=event).count(),
-    #             "user": request.user.username,
-    #         }
-    #     }
-    # )    
-
     return Response({"message":"Attendance recorded", "event":event.title,"ip":ip,"device":device_info}, status=status.HTTP_201_CREATED)
 
 @swagger_auto_schema(
