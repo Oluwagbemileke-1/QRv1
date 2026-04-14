@@ -1,41 +1,41 @@
-from django.core.mail.backends.smtp import EmailBackend
+from django.core.mail.backends.smtp import EmailBackend as SMTPBackend
 from django.utils import timezone
-from .models import EmailLog
+from notifications.models import EmailLog
+import threading
 
+class LoggingEmailBackend(SMTPBackend):
 
-class LoggingEmailBackend(EmailBackend):
+    def _send_and_log(self, message):
+        log = EmailLog.objects.create(
+            to_email=",".join(message.to),
+            subject=message.subject,
+            message=message.body,
+            status="PENDING",
+            last_attempt=timezone.now()
+        )
+
+        try:
+            sent = super().send_messages([message])
+
+            log.status = "SENT" if sent else "FAILED"
+            log.sent_at = timezone.now() if sent else None
+            log.save()
+
+        except Exception as e:
+            log.status = "FAILED"
+            log.error = str(e)
+            log.save()
 
     def send_messages(self, email_messages):
-        results = []
+        threads = []
 
         for message in email_messages:
-            to_email = message.to[0] if message.to else None
-
-            log = EmailLog.objects.create(
-                to_email=to_email,
-                subject=message.subject,
-                message=message.body,
-                status="PENDING",
-                last_attempt=timezone.now()
+            t = threading.Thread(
+                target=self._send_and_log,
+                args=(message,)
             )
+            t.start()
+            threads.append(t)
 
-            try:
-                sent = super().send_messages([message])
-
-                if sent:
-                    log.status = "SENT"
-                    log.sent_at = timezone.now()
-                else:
-                    log.status = "FAILED"
-
-                log.save()
-                results.append(sent)
-
-            except Exception as e:
-                log.status = "FAILED"
-                log.error = str(e)
-                log.save()
-
-                results.append(False)
-
-        return sum(results)
+        # DO NOT block request waiting for SMTP
+        return len(email_messages)

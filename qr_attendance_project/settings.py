@@ -168,6 +168,8 @@ EMAIL_USE_SSL = False
 EMAIL_HOST_USER="gbemioduselu@gmail.com"
 EMAIL_HOST_PASSWORD="xoet ioqs saxa yner"
 DEFAULT_FROM_EMAIL = "QR Attendance <gbemioduselu@gmail.com>"
+
+EMAIL_TIMEOUT = 20
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),  # Access token valid for 24 hours
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # Refresh token valid for 30 days
