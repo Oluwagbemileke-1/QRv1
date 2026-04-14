@@ -1,9 +1,7 @@
-from django.core.mail import send_mail
-from celery import shared_task
 from notifications.tasks import send_email_task
 
 
-@shared_task
+
 def verify_email_task(first_name,verification_link,email):
     subject="Verify your email"
     message=f"""
@@ -18,10 +16,10 @@ This link expires in 10 minutes
 Thanks,
 GM.
     """
-    send_email_task.delay(email, subject, message)
+    send_email_task(email, subject, message)
 
 
-@shared_task
+
 def resend_verify_email_task(first_name,verification_link,email):
     subject="Resend Verification Link"
     message=f"""
@@ -36,9 +34,9 @@ This link expires in 10 minutes
 Thanks,
 GM.
     """
-    send_email_task.delay(email, subject, message)
+    send_email_task(email, subject, message)
 
-@shared_task
+
 def send_welcome_email(email, first_name):
     subject="Welcome to GM QR Attendance System"
     message=f"""
@@ -53,9 +51,9 @@ Get ready  for a seamless experience.
 Thanks,
 GM.
     """
-    send_email_task.delay(email, subject, message)
+    send_email_task(email, subject, message)
 
-@shared_task
+
 def send_otp(first_name,otp,email):
     subject="Password Reset OTP"
     message=f"""
@@ -69,11 +67,11 @@ Thanks,
 GM.
     """ 
 
-    send_email_task.delay(email, subject, message)
+    send_email_task(email, subject, message)
 
     
 
-@shared_task
+
 def resend_otp_email(first_name,otp,email):
        
     subject="Password Reset Resend OTP"
@@ -88,10 +86,10 @@ Thanks,
 GM.
     """
     
-    send_email_task.delay(email, subject, message)
+    send_email_task(email, subject, message)
     
 
-@shared_task   
+   
 def password_changed(first_name,email):
         
     subject="Password Changed Successfully"
@@ -106,4 +104,4 @@ Thanks,
 GM.
     """
 
-    send_email_task.delay(email, subject, message)
+    send_email_task(email, subject, message)

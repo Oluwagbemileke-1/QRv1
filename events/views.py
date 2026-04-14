@@ -80,7 +80,7 @@ def create_event(request):
                 )
 
         event=serializer.save(created_by=request.user)
-        create_event_email.delay(event.title,event.event_code,request.user.email,request.user.first_name)
+        create_event_email(event.title,event.event_code,request.user.email,request.user.first_name)
 
         return Response(
             {"message": "Event created successfully", "data": serializer.data},
@@ -258,7 +258,7 @@ def assign(request, event_id):
     event.attendees.add(*new_users)
 
     
-    send_bulk_invitation_email.delay(
+    send_bulk_invitation_email(
         event.id,
         list(new_users.values_list("id", flat=True))
     )

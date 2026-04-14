@@ -22,4 +22,4 @@ def parse_datetime(date_str):
     start = timezone.make_aware(datetime.combine(date_obj, time.min))
     end = timezone.make_aware(datetime.combine(date_obj, time.max))
 
-    return start
+    return start, end

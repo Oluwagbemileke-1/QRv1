@@ -1,7 +1,5 @@
-from celery import shared_task
 from notifications.tasks import send_email_task
 
-@shared_task
 def create_event_email(title,event_code,email,first_name):
 
     subject="Event Created Successfully"
@@ -16,9 +14,8 @@ Thanks,
 GM.
     """
     
-    send_email_task.delay(email, subject, message)
+    send_email_task(email, subject, message)
 
-@shared_task
 def send_invitation_email(first_name,title,date,start_time,end_time,location_name,event_code,email):
     subject=f"You've been invited to {title}"
     message=f"""
@@ -39,9 +36,8 @@ Thanks,
 GM.
     """
     print("INVITATION EMAIL SENT TO:", email)
-    send_email_task.delay(email, subject, message)
+    send_email_task(email, subject, message)
 
-@shared_task
 def send_bulk_invitation_email(event_id, user_ids):
     from events.models import Event
     from users.models import User
@@ -52,7 +48,7 @@ def send_bulk_invitation_email(event_id, user_ids):
   
     for user in users:
         if user.email:
-            send_invitation_email.delay(
+            send_invitation_email(
                 user.first_name,
                 event.title,
                 str(event.date),

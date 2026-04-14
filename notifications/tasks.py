@@ -1,15 +1,14 @@
-from celery import shared_task
 from django.core.mail import send_mail
 from django.utils import timezone
 from .models import EmailLog
 import re
 
-@shared_task(bind=True, max_retries=3)
-def send_email_task(self, email, subject, message):
-    
+def send_email_task(email, subject, message):
+
     if not email or not re.match(r"^[\w\.-]+@[\w\.-]+\.\w+$", email):
         print("BLOCKED INVALID EMAIL:", email)
-        return
+        return False
+
     log = EmailLog.objects.create(
         to_email=email,
         subject=subject,
@@ -17,7 +16,6 @@ def send_email_task(self, email, subject, message):
         status="PENDING",
         last_attempt=timezone.now()
     )
-
 
     try:
         send_mail(
@@ -32,37 +30,37 @@ def send_email_task(self, email, subject, message):
         log.sent_at = timezone.now()
         log.save()
 
+        return True
+
     except Exception as e:
         print("EMAIL FAILED:", email, str(e))
+
         log.status = "FAILED"
         log.error = str(e)
         log.retry_count += 1
         log.last_attempt = timezone.now()
         log.save()
 
-        raise self.retry(exc=e, countdown=60)
-   
-@shared_task
+        return False
+    
 def resend_failed_email(log_id):
-    from .models import EmailLog
 
     try:
         log = EmailLog.objects.get(id=log_id)
 
-        send_mail(
-            subject=log.subject,
-            message=log.message,
-            from_email="noreply@qrattendance.com",
-            recipient_list=[log.to_email],
-            fail_silently=False
+        success = send_email_task(
+            log.to_email,
+            log.subject,
+            log.message
         )
 
-        log.status = "SENT"
-        log.sent_at = timezone.now()
-        log.error = None
+        if success:
+            log.status = "SENT"
+            log.error = None
+        else:
+            log.status = "FAILED"
+
         log.save()
 
-    except Exception as e:
-        log.status = "FAILED"
-        log.error = str(e)
-        log.save()
+    except EmailLog.DoesNotExist:
+        print("LOG NOT FOUND:", log_id)

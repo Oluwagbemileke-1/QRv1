@@ -17,6 +17,8 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib.pagesizes import landscape, A4,A3
 from datetime import timedelta
 from rest_framework.pagination import PageNumberPagination
+from django.db.models import Count
+
 
 
 # Create your views here.
@@ -82,8 +84,8 @@ def check_in(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     data = serializer.validated_data
     event_code = data["event_code"]
-    userlat = serializer.validated_data.get("latitude")
-    userlon = serializer.validated_data.get("longitude")
+    userlat = data.get("latitude")
+    userlon = data.get("longitude")
     try:
         event = Event.objects.get(event_code=event_code, is_active=True)
     except Event.DoesNotExist:
@@ -99,7 +101,7 @@ def check_in(request):
         return Response({"error":"Wrong event day"}, status=status.HTTP_400_BAD_REQUEST)
     
     now = timezone.localtime().time()
-    if not(event.start_time <= now and now <= event.end_time):
+    if not(event.start_time <= now <= event.end_time):
         return Response({"error":"Not within attendance time"}, status=status.HTTP_400_BAD_REQUEST)
     
 
@@ -188,9 +190,11 @@ def my_attendance(request):
 
     serializer = AttendanceSerializer(page, many=True)
 
-    event_counts = {}
-    for r in records:
-        event_counts[r.event.id] = event_counts.get(r.event.id, 0) + 1
+    event_counts = dict(
+    records.values("event_id")
+    .annotate(total=Count("id"))
+    .values_list("event_id", "total")
+    )
 
     return paginator.get_paginated_response({
         "total_attended": records.count(),
@@ -677,8 +681,8 @@ def export_custom_range_csv(request):
     if request.user.role != "admin":
         return HttpResponse("Not allowed", status=403)
 
-    start_raw = request.GET.get("start")
-    end_raw = request.GET.get("end")
+    start_raw = request.GET.get("start_date")
+    end_raw = request.GET.get("end_date")
 
     if not start_raw or not end_raw:
         return Response(
@@ -686,8 +690,8 @@ def export_custom_range_csv(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    start = parse_datetime(start_raw)
-    end = parse_datetime(end_raw)
+    start, _= parse_datetime(start_raw)
+    _, end = parse_datetime(end_raw)
 
     records = Attendance.objects.filter(
         scan_time__gte=start,
@@ -753,8 +757,8 @@ def export_custom_range_pdf(request):
     if request.user.role != "admin":
         return Response({"error": "Not allowed"}, status=403)
 
-    start_raw = request.GET.get("start")
-    end_raw = request.GET.get("end")
+    start_raw = request.GET.get("start_date")
+    end_raw = request.GET.get("end_date")
 
     if not start_raw or not end_raw:
         return Response(
@@ -762,8 +766,8 @@ def export_custom_range_pdf(request):
             status=400
         )
 
-    start = parse_datetime(start_raw)
-    end = parse_datetime(end_raw)
+    start, _= parse_datetime(start_raw)
+    _, end = parse_datetime(end_raw)
 
     records = Attendance.objects.filter(
         scan_time__gte=start,

@@ -44,8 +44,12 @@ def register(request):
        #BASE_URL = "http://127.0.0.1:8000"
        domain = get_current_site(request).domain
        verification_link = f"http://{domain}/api/users/verify-email/{raw_token}"
-       verify_email_task.delay( user.first_name, verification_link,user.email)
-       return Response({"message":"User created. Verify your email."}, status=status.HTTP_201_CREATED)
+       verify_email_task(user.first_name, verification_link,user.email)
+       return Response({
+            "message": "User created successfully. Verification email sent.",
+            "email": user.email,
+            "next_step": "Check inbox or use resend verification if needed"
+        }, status=status.HTTP_201_CREATED)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -88,7 +92,7 @@ def verify_email(request, token):
     user.is_active = True
     user.is_verified=True
     user.save()
-    send_welcome_email.delay(user.email, user.first_name)
+    send_welcome_email(user.email, user.first_name)
     return Response({"message":"Email verified successfully"})
 
 @swagger_auto_schema(
@@ -134,9 +138,9 @@ def resend_verification(request):
     BASE_URL = settings.FRONTEND_URL
     verification_link = f"{BASE_URL}/verify-email/{raw_token}"
 
-    resend_verify_email_task.delay(user.first_name, verification_link, user.email)
+    resend_verify_email_task(user.first_name, verification_link, user.email)
 
-    return Response({"message": "Verification email resent"})
+    return Response({"message": "Verification email resent","email": user.email}, status=status.HTTP_200_OK)
 
 @swagger_auto_schema(
     method='post',
@@ -361,7 +365,7 @@ def change_password(request):
         user = request.user
         user.set_password(serializer.validated_data['new_password'])
         user.save()
-        password_changed.delay(user.first_name,user.email)
+        password_changed(user.first_name,user.email)
 
         return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
     
@@ -408,9 +412,9 @@ def forgot_password(request):
     otp_obj=PasswordResetOTP(user=user)
     otp_obj.set_otp(otp)
     otp_obj.save()
-    send_otp.delay(user.first_name,otp,user.email)
+    send_otp(user.first_name,otp,user.email)
     
-    print("OTP", otp)
+    
 
     return Response({"status":"success", "message":"OTP sent"})
 
@@ -562,7 +566,7 @@ def resend_otp(request):
     otp_obj.set_otp(otp)
     otp_obj.save()
 
-    resend_otp_email.delay(user.first_name,otp,user.email)
+    resend_otp_email(user.first_name,otp,user.email)
 
     # print("RESEND OTP:", otp)
 
