@@ -8,7 +8,7 @@ from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db.models import Q
 from .models import PasswordResetOTP,EmailVerification
-import random
+import random, threading
 from django.utils import timezone
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -18,6 +18,7 @@ from drf_yasg import openapi
 from .tasks import send_welcome_email,send_otp,password_changed,resend_otp_email,verify_email_task,resend_verify_email_task
 from django.conf import settings
 from django.contrib.sites.shortcuts import get_current_site
+from django.core.mail import send_mail
 
 User = get_user_model() # Get the custom user model defined in users/models.py
 
@@ -31,27 +32,57 @@ User = get_user_model() # Get the custom user model defined in users/models.py
 
 @api_view(['POST'])
 
+def send_wan_email(user_email):
+    try:
+        send_mail(
+            subject="Welcome to QR Attendance",
+            message="Your account has been created successfully.",
+            from_email=settings.EMAIL_HOST_USER,
+            recipient_list=[user_email],
+            fail_silently=True,  # VERY IMPORTANT
+        )
+    except Exception as e:
+        print("EMAIL ERROR:", str(e))
 def register(request):
+    
     serializer = RegisterSerializer(data=request.data)
     if serializer.is_valid():
        user = serializer.save(is_active=False,is_verified=False)
        user.save()
 
-       raw_token = EmailVerification.generate_token()
-       hashed = EmailVerification.hash_token(raw_token)
+       if user.email:
+           threading.Thread(
+                target=verify_email_task,
+                args=(user.email,)
+            ).start()
+       return Response(
+            {
+                "message": "User created successfully",
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email
+                }
+            },
+            status=status.HTTP_201_CREATED
+        )
 
-       EmailVerification.objects.create(user=user,token_hash=hashed)
-       #BASE_URL = "http://127.0.0.1:8000"
-       domain = get_current_site(request).domain
-       verification_link = f"http://{domain}/api/users/verify-email/{raw_token}"
-       verify_email_task(user.first_name, verification_link,user.email)
-       return Response({
-            "message": "User created successfully. Verification email sent.",
-            "email": user.email,
-            "next_step": "Check inbox or use resend verification if needed"
-        }, status=status.HTTP_201_CREATED)
+  
+    #    raw_token = EmailVerification.generate_token()
+    #    hashed = EmailVerification.hash_token(raw_token)
 
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    #    EmailVerification.objects.create(user=user,token_hash=hashed)
+    #    #BASE_URL = "http://127.0.0.1:8000"
+    #    domain = get_current_site(request).domain
+    #    verification_link = f"http://{domain}/api/users/verify-email/{raw_token}"
+    #    verify_email_task(user.first_name, verification_link,user.email)
+    #    return Response({
+    #         "message": "User created successfully. Verification email sent.",
+    #         "email": user.email,
+    #         "next_step": "Check inbox or use resend verification if needed"
+    #     }, status=status.HTTP_201_CREATED)
+
+    # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @swagger_auto_schema(
     method='get',
