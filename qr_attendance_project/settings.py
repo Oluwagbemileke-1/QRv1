@@ -165,8 +165,9 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
-EMAIL_HOST_USER="gbemioduselu@gmail.com"
-EMAIL_HOST_PASSWORD="xoet ioqs saxa yner"
+
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = "QR Attendance <gbemioduselu@gmail.com>"
 
 EMAIL_TIMEOUT = 20
