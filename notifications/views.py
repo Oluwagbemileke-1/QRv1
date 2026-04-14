@@ -1,10 +1,12 @@
-from rest_framework.decorators import api_view
+from django.core.mail import send_mail
+from django.utils import timezone
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from .models import EmailLog
-from .tasks import resend_failed_email
-from drf_yasg.utils import swagger_auto_schema
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import permission_classes
+from drf_yasg.utils import swagger_auto_schema
+
+from .models import EmailLog
+
 
 @swagger_auto_schema(
     method='post',
@@ -15,15 +17,29 @@ from rest_framework.decorators import permission_classes
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def resend_email(request, log_id):
+
     try:
         log = EmailLog.objects.get(id=log_id)
 
         if log.status != "FAILED":
             return Response({"message": "Email is not failed"}, status=400)
 
-        resend_failed_email.delay(log.id)
+        # 🔥 retry sending
+        send_mail(
+            subject=log.subject,
+            message=log.message,
+            from_email="noreply@qrattendance.com",
+            recipient_list=[log.to_email],
+            fail_silently=False
+        )
 
-        return Response({"message": "Resend triggered"})
+        # 🔥 update log AFTER resend
+        log.status = "SENT"
+        log.sent_at = timezone.now()
+        log.error = None
+        log.save()
+
+        return Response({"message": "Email resent successfully"})
 
     except EmailLog.DoesNotExist:
         return Response({"error": "Log not found"}, status=404)

@@ -160,14 +160,14 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,  # Default page size for pagination
 }
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_BACKEND = "notifications.email_backend.LoggingEmailBackend"
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 EMAIL_HOST_USER="gbemioduselu@gmail.com"
 EMAIL_HOST_PASSWORD="xoet ioqs saxa yner"
-
+DEFAULT_FROM_EMAIL = "QR Attendance <gbemioduselu@gmail.com>"
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),  # Access token valid for 24 hours
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # Refresh token valid for 30 days

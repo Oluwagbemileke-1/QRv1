@@ -8,11 +8,13 @@ from datetime import date
 from .serializers import EventSerializer, UpdateEventSerializer,AllSerializer
 from rest_framework.pagination import PageNumberPagination
 from django.contrib.auth import get_user_model
-from django.core.mail import send_mail
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from events.tasks import send_invitation_email,create_event_email,send_bulk_invitation_email
 import re
+from django.core.mail import send_mail
+from django.conf import settings
+from django.utils.html import strip_tags
+
 
 User = get_user_model()
 def get_assignment_preview(event, user_ids):
@@ -80,7 +82,28 @@ def create_event(request):
                 )
 
         event=serializer.save(created_by=request.user)
-        create_event_email(event.title,event.event_code,request.user.email,request.user.first_name)
+    try:
+        send_mail(
+            subject="Event Created Successfully",
+            message=f"""
+Hello {request.user.first_name or request.user.username},
+
+Your event "{event.title}" has been created successfully.
+
+Event Code: {event.event_code}
+
+Date: {event.date}
+Time: {event.start_time} - {event.end_time}
+
+Thanks,
+GM
+            """,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[request.user.email],
+            fail_silently=False,
+        )
+    except Exception as e:
+        print("EVENT CREATE EMAIL ERROR:", e)
 
         return Response(
             {"message": "Event created successfully", "data": serializer.data},
@@ -256,12 +279,37 @@ def assign(request, event_id):
 
     
     event.attendees.add(*new_users)
-
     
-    send_bulk_invitation_email(
-        event.id,
-        list(new_users.values_list("id", flat=True))
-    )
+    for user in new_users:
+        if not user.email:
+            continue
+        
+        try:
+            send_mail(
+                subject=f"You've been invited to {event.title}",
+                message=f"""
+Hello {user.first_name or user.username},
+
+You have been invited to an event.
+
+Event: {event.title}
+Date: {event.date}
+Time: {event.start_time} - {event.end_time}
+Location: {event.location_name}
+
+Event Code: {event.event_code}
+
+Please attend and scan the QR code at the venue.
+
+Thanks,
+GM
+                """,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=True,
+            )
+        except Exception as e:
+            print(f"EMAIL FAILED for {user.email}: {e}")
 
     return Response({
         "message": "Assignment complete",
