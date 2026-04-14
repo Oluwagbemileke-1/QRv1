@@ -22,15 +22,8 @@ from django.core.mail import send_mail
 
 User = get_user_model() # Get the custom user model defined in users/models.py
 
-@swagger_auto_schema(
-    method='post',
-    tags=["👤 USERS"],
-    operation_summary="Register",
-    operation_description="**Register user **",
-    request_body=RegisterSerializer
-)
 
-@api_view(['POST'])
+
 
 def send_wan_email(user_email):
     try:
@@ -43,6 +36,15 @@ def send_wan_email(user_email):
         )
     except Exception as e:
         print("EMAIL ERROR:", str(e))
+@swagger_auto_schema(
+    method='post',
+    tags=["👤 USERS"],
+    operation_summary="Register",
+    operation_description="**Register user **",
+    request_body=RegisterSerializer
+)
+
+@api_view(['POST'])
 def register(request):
     
     serializer = RegisterSerializer(data=request.data)
@@ -52,7 +54,7 @@ def register(request):
 
        if user.email:
            threading.Thread(
-                target=verify_email_task,
+                target=send_wan_email,
                 args=(user.email,)
             ).start()
        return Response(
