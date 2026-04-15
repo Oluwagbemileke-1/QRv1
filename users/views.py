@@ -73,8 +73,36 @@ GM.
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-
+@swagger_auto_schema(
+    method='post',
+    tags=["👤 USERS"],
+    operation_summary="Simple",
+    operation_description="**Simple**",
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'email': openapi.Schema(type=openapi.TYPE_STRING)
+        },
+        required=['email']
+)
+)
+@api_view(['POST'])
+def simple(request):
+    email = request.data.get('email')
+    try:
+        send_mail(
+            subject="Welcome to GM QR Attendance System",
+            message=f"""
+Hi ,
+hello
+    """,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=False,
+            )
+    except Exception as e:
+        print("EMAIL ERROR:", e)
+    return Response({"message":"Email verified successfully"})
 @swagger_auto_schema(
     method='get',
     manual_parameters=[
