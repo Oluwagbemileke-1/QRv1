@@ -160,17 +160,16 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,  # Default page size for pagination
 }
 
-EMAIL_BACKEND = "notifications.email_backend.LoggingEmailBackend"
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = os.getenv('BREVO_SMTP_SERVER', 'smtp-relay.brevo.com')
+EMAIL_PORT = int(os.getenv('BREVO_PORT', 587))
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
+EMAIL_HOST_USER = os.getenv('BREVO_LOGIN')
+EMAIL_HOST_PASSWORD = os.getenv('BREVO_SMTP_KEY')
+DEFAULT_FROM_EMAIL = 'gbemioduselu@gmail.com'
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://127.0.0.1:8000')
 
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
-DEFAULT_FROM_EMAIL = "QR Attendance <gbemioduselu@gmail.com>"
-
-EMAIL_TIMEOUT = 20
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),  # Access token valid for 24 hours
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # Refresh token valid for 30 days

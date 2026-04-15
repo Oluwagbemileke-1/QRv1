@@ -15,9 +15,8 @@ from django.core.exceptions import ValidationError
 from datetime import timedelta
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from django.core.mail import send_mail
+from .tasks import send_welcome_email,send_otp,password_changed,resend_otp_email,verify_email_task,resend_verify_email_task
 from django.conf import settings
-from django.contrib.sites.shortcuts import get_current_site
 
 User = get_user_model() # Get the custom user model defined in users/models.py
 
@@ -33,6 +32,7 @@ User = get_user_model() # Get the custom user model defined in users/models.py
 
 def register(request):
     serializer = RegisterSerializer(data=request.data)
+    # import pdb; pdb.set_trace()
     if serializer.is_valid():
        user = serializer.save(is_active=False,is_verified=False)
        user.save()
@@ -40,69 +40,23 @@ def register(request):
        raw_token = EmailVerification.generate_token()
        hashed = EmailVerification.hash_token(raw_token)
 
+
        EmailVerification.objects.create(user=user,token_hash=hashed)
-       #BASE_URL = "http://127.0.0.1:8000"
-       domain = get_current_site(request).domain
+       domain = request.get_host()
        verification_link = f"http://{domain}/api/users/verify-email/{raw_token}"
-       try:
-            send_mail(
-                 subject="Verify your email",
-    message=f"""
-Hello {user.first_name},
+       verify_email_task(user.first_name, verification_link, user.email)
 
-Click the link below to verify your email:
-
-{verification_link}
-
-This link expires in 10 minutes
-
-Thanks,
-GM.
-    """,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=False,
-        )
-       except Exception as e:
-            print("EMAIL ERROR:", e)
-       return Response({
-            "message": "User created successfully. Verification email sent.",
-            "email": user.email,
-            "next_step": "Check inbox or use resend verification if needed"
-        }, status=status.HTTP_201_CREATED)
+       if verify_email_task:
+        return Response({
+                "message": "User created successfully. Verification email sent.",
+                "email": user.email,
+                "next_step": "Check inbox or use resend verification if needed"
+            }, status=status.HTTP_201_CREATED)
+       else:
+           return("Failed to send email. Please check code")
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@swagger_auto_schema(
-    method='post',
-    tags=["👤 USERS"],
-    operation_summary="Simple",
-    operation_description="**Simple**",
-    request_body=openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        properties={
-            'email': openapi.Schema(type=openapi.TYPE_STRING)
-        },
-        required=['email']
-)
-)
-@api_view(['POST'])
-def simple(request):
-    email = request.data.get('email')
-    try:
-        send_mail(
-            subject="Welcome to GM QR Attendance System",
-            message=f"""
-Hi ,
-hello
-    """,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-            fail_silently=False,
-            )
-    except Exception as e:
-        print("EMAIL ERROR:", e)
-    return Response({"message":"Email verified successfully"})
 @swagger_auto_schema(
     method='get',
     manual_parameters=[
@@ -142,27 +96,7 @@ def verify_email(request, token):
     user.is_active = True
     user.is_verified=True
     user.save()
-    try:
-        send_mail(
-            subject="Welcome to GM QR Attendance System",
-            message=f"""
-Hi {user.first_name},
-
-Your account has been created successfully.
-
-You  can now login and start using the system.
-
-Get ready  for a seamless experience.
-
-Thanks,
-GM.
-    """,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=False,
-            )
-    except Exception as e:
-        print("EMAIL ERROR:", e)
+    send_welcome_email(user.email, user.first_name)
     return Response({"message":"Email verified successfully"})
 
 @swagger_auto_schema(
@@ -205,30 +139,10 @@ def resend_verification(request):
     raw_token = EmailVerification.generate_token()
     hashed = EmailVerification.hash_token(raw_token)
     EmailVerification.objects.create(user=user, token_hash=hashed)
-    BASE_URL = settings.FRONTEND_URL
+    BASE_URL = getattr(settings, 'FRONTEND_URL', f"http://{request.get_host()}")
     verification_link = f"{BASE_URL}/verify-email/{raw_token}"
 
-    try:
-        send_mail(
-            subject="Resend Verification Link",
-            message=f"""
-Hello {user.first_name},
-
-Click the link below to verify your email:
-
-{verification_link}
-
-This link expires in 10 minutes
-
-Thanks,
-GM.
-    """,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=False,
-        )
-    except Exception as e:
-        print("EMAIL ERROR:", e)
+    resend_verify_email_task(user.first_name, verification_link, user.email)
 
     return Response({"message": "Verification email resent","email": user.email}, status=status.HTTP_200_OK)
 
@@ -455,25 +369,7 @@ def change_password(request):
         user = request.user
         user.set_password(serializer.validated_data['new_password'])
         user.save()
-        try:
-            send_mail(
-                subject="Password Changed Successfully",
-                message=f"""
-Hi {user.first_name},
-
-Your password has been changed successfully.
-
-You can now login.
-
-Thanks,
-GM.
-    """,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=False,
-        )
-        except Exception as e:
-            print("EMAIL ERROR:", e)
+        password_changed(user.first_name,user.email)
 
         return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
     
@@ -520,28 +416,11 @@ def forgot_password(request):
     otp_obj=PasswordResetOTP(user=user)
     otp_obj.set_otp(otp)
     otp_obj.save()
-    try:
-        send_mail(
-            subject="Password Reset OTP",
-            message=f"""
-Hi {user.first_name},
+    send_otp(user.first_name,otp,user.email)
+    
+    
 
-Your OTP is {otp} 
-
-It will expire in 10 minutes.
-
-Thanks,
-GM.
-    """,
-
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=False,
-        )
-    except Exception as e:
-        print("EMAIL ERROR:", e)
     return Response({"status":"success", "message":"OTP sent"})
-
 
 @swagger_auto_schema(
     method='post',
@@ -640,25 +519,6 @@ def reset_password(request):
     user.set_password(new_password)
     user.save()
     PasswordResetOTP.objects.filter(user=user).delete()
-    try:
-        send_mail(        
-            subject="Password Changed Successfully",
-            message=f"""
-Hi {user.first_name},
-
-Your password has been changed successfully.
-
-You can now login.
-
-Thanks,
-GM.
-    """,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=False,
-            )
-    except Exception as e:
-        print("EMAIL ERROR (password):", e)
     return Response({"status": "success", "message": "Password reset successful"})
 
 @swagger_auto_schema(
@@ -710,26 +570,9 @@ def resend_otp(request):
     otp_obj.set_otp(otp)
     otp_obj.save()
 
-    try:
-        send_mail(
-            subject="Password Reset Resend OTP",
-            message=f"""
-Hi {user.first_name},
+    resend_otp_email(user.first_name,otp,user.email)
 
-Your new OTP is {otp} 
-
-It will expire in 10 minutes.
-
-Thanks,
-GM.
-    """,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=False,
-            )
-    except Exception as e:
-        print("EMAIL ERROR:", e)
-
+    # print("RESEND OTP:", otp)
 
     return Response({
         "status": "success",
