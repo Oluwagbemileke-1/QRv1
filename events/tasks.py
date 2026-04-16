@@ -11,7 +11,7 @@ Your event "{title}" has been created successfully.
 Event Code: {event_code}
 
 Thanks,
-GM.
+QRAMS.
     """
     
     send_email_task(email, subject, message)
@@ -33,7 +33,7 @@ Event Code: {event_code}
 Please attend and scan the QR code at the venue
 
 Thanks,
-GM.
+QRAMS.
     """
     print("INVITATION EMAIL SENT TO:", email)
     send_email_task(email, subject, message)
@@ -43,20 +43,21 @@ def send_bulk_invitation_email(event_id, user_ids):
     from users.models import User
 
     event = Event.objects.get(id=event_id)
-    users = User.objects.filter(id__in=user_ids)
+    users = User.objects.filter(id__in=user_ids).exclude(email__isnull=True).exclude(email='')
 
-  
+    if not users.exists():
+        return
+
+    # Send individual emails via Brevo
     for user in users:
-        if user.email:
-            send_invitation_email(
-                user.first_name,
-                event.title,
-                str(event.date),
-                str(event.start_time),
-                str(event.end_time),
-                event.location_name,
-                event.event_code,
-                user.email
-            )
-
-   
+        send_invitation_email(
+            user.first_name,
+            event.title,
+            event.date,
+            event.start_time,
+            event.end_time,
+            event.location_name,
+            event.event_code,
+            user.email
+        )
+    print(f"Bulk email sent to {users.count()} recipients")  

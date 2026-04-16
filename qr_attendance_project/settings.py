@@ -160,14 +160,9 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,  # Default page size for pagination
 }
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = os.getenv('BREVO_SMTP_SERVER', 'smtp-relay.brevo.com')
-EMAIL_PORT = int(os.getenv('BREVO_PORT', 587))
-EMAIL_USE_TLS = True
-EMAIL_USE_SSL = False
-EMAIL_HOST_USER = os.getenv('BREVO_LOGIN')
-EMAIL_HOST_PASSWORD = os.getenv('BREVO_SMTP_KEY')
-DEFAULT_FROM_EMAIL = 'gbemioduselu@gmail.com'
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"  # Fallback, but we'll use Brevo API
+BREVO_API_KEY = os.getenv('BREVO_API_KEY')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'QRAMS <me@oluwaseunapata.com>')
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://127.0.0.1:8000')
 
 SIMPLE_JWT = {

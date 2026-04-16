@@ -13,6 +13,7 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from events.tasks import send_invitation_email,create_event_email,send_bulk_invitation_email
 import re
+from attendance.utils import generate_qr_code
 
 User = get_user_model()
 def get_assignment_preview(event, user_ids):
@@ -81,6 +82,7 @@ def create_event(request):
 
         event=serializer.save(created_by=request.user)
         create_event_email(event.title,event.event_code,request.user.email,request.user.first_name)
+        generate_qr_code(str(event.id))  # Generate QR for the event in .NET API
 
         return Response(
             {"message": "Event created successfully", "data": serializer.data},

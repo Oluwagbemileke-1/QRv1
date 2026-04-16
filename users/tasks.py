@@ -14,9 +14,9 @@ Click the link below to verify your email:
 This link expires in 10 minutes
 
 Thanks,
-GM.
+QRAMS.
     """
-    send_email_task(email, subject, message)
+    return send_email_task(email, subject, message)
 
 
 
@@ -32,13 +32,13 @@ Click the link below to verify your email:
 This link expires in 10 minutes
 
 Thanks,
-GM.
+QRAMS.
     """
     send_email_task(email, subject, message)
 
 
 def send_welcome_email(email, first_name):
-    subject="Welcome to GM QR Attendance System"
+    subject="Welcome to  QR Attendance Management System"
     message=f"""
 Hi {first_name},
 
@@ -49,7 +49,7 @@ You  can now login and start using the system.
 Get ready  for a seamless experience.
 
 Thanks,
-GM.
+QRAMS.
     """
     send_email_task(email, subject, message)
 
@@ -64,7 +64,7 @@ Your OTP is {otp}
 It will expire in 10 minutes.
 
 Thanks,
-GM.
+QRAMS.
     """ 
 
     send_email_task(email, subject, message)
@@ -83,7 +83,7 @@ Your new OTP is {otp}
 It will expire in 10 minutes.
 
 Thanks,
-GM.
+QRAMS.
     """
     
     send_email_task(email, subject, message)
@@ -101,7 +101,7 @@ Your password has been changed successfully.
 You can now login.
 
 Thanks,
-GM.
+QRAMS.
     """
 
     send_email_task(email, subject, message)

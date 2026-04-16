@@ -1,1 +1,1 @@
-web: gunicorn qr_attendance_projecy.wsgi
+web: gunicorn qr_attendance_project.wsgi

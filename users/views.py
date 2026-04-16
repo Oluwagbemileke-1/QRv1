@@ -17,6 +17,8 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .tasks import send_welcome_email,send_otp,password_changed,resend_otp_email,verify_email_task,resend_verify_email_task
 from django.conf import settings
+from django.core.mail import send_mail
+
 
 User = get_user_model() # Get the custom user model defined in users/models.py
 
@@ -44,16 +46,24 @@ def register(request):
        EmailVerification.objects.create(user=user,token_hash=hashed)
        domain = request.get_host()
        verification_link = f"http://{domain}/api/users/verify-email/{raw_token}"
-       verify_email_task(user.first_name, verification_link, user.email)
+       try:
+           email_sent = verify_email_task(user.first_name, verification_link, user.email)
+       except Exception as e:
+           print("EMAIL SEND EXCEPTION:", str(e))
+           email_sent = False
 
-       if verify_email_task:
-        return Response({
-                "message": "User created successfully. Verification email sent.",
-                "email": user.email,
-                "next_step": "Check inbox or use resend verification if needed"
-            }, status=status.HTTP_201_CREATED)
+       if email_sent:
+           return Response({
+               "message": "User created successfully. Verification email sent.",
+               "email": user.email,
+               "next_step": "Check inbox or use resend verification if needed"
+           }, status=status.HTTP_201_CREATED)
        else:
-           return("Failed to send email. Please check code")
+           return Response({
+               "message": "User created, but verification email failed.",
+               "email": user.email,
+               "next_step": "Contact support or resend verification"
+           }, status=status.HTTP_202_ACCEPTED)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -139,9 +149,8 @@ def resend_verification(request):
     raw_token = EmailVerification.generate_token()
     hashed = EmailVerification.hash_token(raw_token)
     EmailVerification.objects.create(user=user, token_hash=hashed)
-    BASE_URL = getattr(settings, 'FRONTEND_URL', f"http://{request.get_host()}")
-    verification_link = f"{BASE_URL}/verify-email/{raw_token}"
-
+    domain = request.get_host()
+    verification_link = f"http://{domain}/api/users/verify-email/{raw_token}"
     resend_verify_email_task(user.first_name, verification_link, user.email)
 
     return Response({"message": "Verification email resent","email": user.email}, status=status.HTTP_200_OK)

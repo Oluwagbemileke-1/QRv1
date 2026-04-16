@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from drf_yasg.utils import swagger_auto_schema
 
 from .models import EmailLog
+from .tasks import send_email_task
 
 
 @swagger_auto_schema(
@@ -24,22 +25,21 @@ def resend_email(request, log_id):
         if log.status != "FAILED":
             return Response({"message": "Email is not failed"}, status=400)
 
-        # 🔥 retry sending
-        send_mail(
-            subject=log.subject,
-            message=log.message,
-            from_email="noreply@qrattendance.com",
-            recipient_list=[log.to_email],
-            fail_silently=False
+        # 🔥 retry sending using Mailjet
+        success = send_email_task(
+            log.to_email,
+            log.subject,
+            log.message
         )
 
-        # 🔥 update log AFTER resend
-        log.status = "SENT"
-        log.sent_at = timezone.now()
-        log.error = None
-        log.save()
-
-        return Response({"message": "Email resent successfully"})
+        if success:
+            log.status = "SENT"
+            log.sent_at = timezone.now()
+            log.error = None
+            log.save()
+            return Response({"message": "Email resent successfully"})
+        else:
+            return Response({"message": "Failed to resend email"}, status=500)
 
     except EmailLog.DoesNotExist:
         return Response({"error": "Log not found"}, status=404)

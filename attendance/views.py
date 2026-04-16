@@ -18,6 +18,7 @@ from reportlab.lib.pagesizes import landscape, A4,A3
 from datetime import timedelta
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Count
+from .utils import validate_qr_code
 
 
 
@@ -68,6 +69,12 @@ def calc_col_widths(data, total_width):
     ]
 
 
+def can_view_event_attendance(user, event):
+    if user.role == "admin":
+        return True
+    return event.attendees.filter(id=user.id).exists()
+
+
 @swagger_auto_schema(
     method='post',
     tags=["📍 ATTENDANCE"],
@@ -90,6 +97,14 @@ def check_in(request):
         event = Event.objects.get(event_code=event_code, is_active=True)
     except Event.DoesNotExist:
         return Response({"error":"Invalid event code"}, status=status.HTTP_404_NOT_FOUND)
+    
+    # Validate QR with .NET API
+    validation = validate_qr_code(event_code, request.user.username)
+    if not validation['valid']:
+        if validation['fraud_detected']:
+            return Response({"error": "Fraudulent scan detected"}, status=status.HTTP_403_FORBIDDEN)
+        else:
+            return Response({"error": validation['message']}, status=status.HTTP_400_BAD_REQUEST)
     
     if not event.attendees.filter(id=request.user.id).exists():
         return Response({"error":"Not assigned to event"}, status=status.HTTP_403_FORBIDDEN)
@@ -256,12 +271,16 @@ def my_event_attendance(request, event_id):
 def admin_dashboard(request):
     if request.user.role != "admin":
         return Response ({"error":"Not allowed"}, status=status.HTTP_403_FORBIDDEN)
-    total_events = Event.objects.filter(created_by=request.user, is_active = True).count()
+    admin_events = Event.objects.filter(created_by=request.user, is_active=True)
+    total_events = admin_events.count()
     total_users = User.objects.count()
-    total_attendance = Attendance.objects.count()
+    total_attendance = Attendance.objects.filter(event__in=admin_events).count()
 
     today = timezone.now().date()
-    today_attendance = Attendance.objects.filter(scan_time__date=today).count()
+    today_attendance = Attendance.objects.filter(
+        event__in=admin_events,
+        scan_time__date=today,
+    ).count()
     return Response({
         "total_events":total_events,
         "total_users":total_users,
@@ -292,7 +311,7 @@ def event_dashboard(request,event_id):
         return Response({"error": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
     
     try:
-        event = Event.objects.get(id=event_id, is_active=True)
+        event = Event.objects.get(id=event_id, is_active=True, created_by=request.user)
     except Event.DoesNotExist:
         return Response({"error":"Event not found"}, status=status.HTTP_404_NOT_FOUND)
     
@@ -340,15 +359,27 @@ def event_dashboard(request,event_id):
 @permission_classes([IsAuthenticated])
 def live_attendance(request,event_id):
     try:
-        event = Event.objects.get(id=event_id)
+        event = Event.objects.get(id=event_id, is_active=True)
     except Event.DoesNotExist:
         return Response({"error":"Event not found"}, status=status.HTTP_404_NOT_FOUND)
-    
+
+    if not can_view_event_attendance(request.user, event):
+        return Response({"error":"Not allowed"}, status=status.HTTP_403_FORBIDDEN)
+
+    today = timezone.localdate()
+    now = timezone.localtime().time()
+    is_live = event.date == today and event.start_time <= now <= event.end_time
     count = Attendance.objects.filter(event=event).count()
+    currently_present = count if is_live else 0
 
     return Response({
         "event":event.title,
-        "live_count":count
+        "event_id": event.id,
+        "live_count":count,
+        "current_attendance":count,
+        "currently_present": currently_present,
+        "final_attendance": count,
+        "is_live": is_live
     })
 
 @swagger_auto_schema(
