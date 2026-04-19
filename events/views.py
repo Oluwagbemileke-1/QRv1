@@ -82,7 +82,6 @@ def create_event(request):
 
         event=serializer.save(created_by=request.user)
         create_event_email(event.title,event.event_code,request.user.email,request.user.first_name)
-        generate_qr_code(str(event.id))  # Generate QR for the event in .NET API
 
         return Response(
             {"message": "Event created successfully", "data": serializer.data},
@@ -90,6 +89,52 @@ def create_event(request):
         )
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@swagger_auto_schema(
+    method='post',
+    tags=["EVENTS"],
+    operation_summary="Generate Event QR",
+    operation_description="Generate a QR code for an existing event when the owner is ready to start attendance.",
+    manual_parameters=[
+        openapi.Parameter(
+            'event_id',
+            openapi.IN_PATH,
+            description="Event UUID",
+            type=openapi.TYPE_STRING,
+            format='uuid',
+            required=True
+        )
+    ],
+    responses={
+        200: "QR generated successfully",
+        403: "Not allowed",
+        404: "Event not found"
+    }
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def generate_event_qr(request, event_id):
+    try:
+        event = Event.objects.get(id=event_id, is_active=True)
+    except Event.DoesNotExist:
+        return Response({"error": "Event not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if event.created_by != request.user:
+        return Response({"error": "You are not allowed to generate a QR for this event"}, status=status.HTTP_403_FORBIDDEN)
+
+    qr_data = generate_qr_code(str(event.id))
+    if not qr_data:
+        return Response({"error": "Failed to generate QR code"}, status=status.HTTP_502_BAD_GATEWAY)
+
+    return Response({
+        "message": "QR code generated successfully",
+        "event_id": str(event.id),
+        "event_title": event.title,
+        "data": qr_data
+    }, status=status.HTTP_200_OK)
+
+
+
 
 @swagger_auto_schema(
     method='post',

@@ -3,9 +3,21 @@ from .models import Attendance
 
 
 class AttendanceCheckInSerializer(serializers.Serializer):
-        latitude = serializers.FloatField(required=False, allow_null=True)
-        longitude = serializers.FloatField(required=False, allow_null=True)
-        event_code = serializers.CharField()
+    latitude = serializers.FloatField(required=False, allow_null=True)
+    longitude = serializers.FloatField(required=False, allow_null=True)
+    event_code = serializers.CharField()
+    qr_payload = serializers.CharField(required=False, allow_blank=False)
+    payload = serializers.CharField(required=False, allow_blank=False)
+
+    def validate(self, attrs):
+        qr_payload = attrs.get("qr_payload") or attrs.get("payload")
+        if not qr_payload:
+            raise serializers.ValidationError({
+                "qr_payload": "This field is required."
+            })
+        attrs["qr_payload"] = qr_payload
+        return attrs
+
 
 class AttendanceSerializer(serializers.ModelSerializer):
 
@@ -19,7 +31,6 @@ class AttendanceSerializer(serializers.ModelSerializer):
             "id",
             "user",
             "event",
-            "qr_data",
             "scan_time",
             "ip_address",
             "device_info",
