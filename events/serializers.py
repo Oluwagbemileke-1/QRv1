@@ -7,6 +7,7 @@ class EventSerializer(serializers.ModelSerializer):
     start_time = serializers.TimeField(format="%I:%M %p")
     end_time = serializers.TimeField(format="%I:%M %p")
     created_by = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
 
     class Meta:
         model = Event
@@ -19,6 +20,7 @@ class EventSerializer(serializers.ModelSerializer):
             "end_time",
             "location_name",
             "event_code",
+            "status",
             "created_by",
             "created_at"
         )
@@ -32,6 +34,9 @@ class EventSerializer(serializers.ModelSerializer):
             "username": obj.created_by.username,
             "fullname": fullname if fullname.strip() else obj.created_by.username
         }
+
+    def get_status(self, obj):
+        return obj.status.title()
     
     def validate(self,data):
         start_time = data.get("start_time")

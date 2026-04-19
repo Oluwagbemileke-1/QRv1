@@ -21,6 +21,14 @@ class User(AbstractUser):
             self.is_staff = True
         super().save(*args, **kwargs)
 
+    @property
+    def display_role(self):
+        if self.is_superuser:
+            return "Superuser"
+        if self.role == "admin":
+            return "Admin"
+        return "User"
+
     def __str__(self):
           return f"{self.first_name} {self.last_name}"
     

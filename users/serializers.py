@@ -82,9 +82,14 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
           
 class UserSerializer(serializers.ModelSerializer):
+    account_type = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name','phone')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name','phone', 'account_type')
+
+    def get_account_type(self, obj):
+        return obj.display_role
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)

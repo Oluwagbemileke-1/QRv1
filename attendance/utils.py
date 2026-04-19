@@ -67,9 +67,11 @@ def validate_qr_code(qr_data, username):
             elif scan_result == 'Fraud':
                 return {'valid': False, 'fraud_detected': True, 'message': 'Fraud detected'}
             else:
-                return {'valid': False, 'fraud_detected': False, 'message': 'Scan failed'}
+                return {'valid': False, 'fraud_detected': False, 'message': 'Invalid or expired QR code'}
         elif response.status_code == 403:
             return {'valid': False, 'fraud_detected': True, 'message': 'Fraud detected'}
+        elif response.status_code == 400:
+            return {'valid': False, 'fraud_detected': False, 'message': 'Invalid or expired QR code'}
         else:
             return {'valid': False, 'fraud_detected': False, 'message': 'API error'}
     except requests.RequestException as e:

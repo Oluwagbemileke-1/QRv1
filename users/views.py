@@ -22,6 +22,10 @@ from django.core.mail import send_mail
 
 User = get_user_model() # Get the custom user model defined in users/models.py
 
+
+def is_superuser_request(request):
+    return bool(request.user and request.user.is_authenticated and request.user.is_superuser)
+
 @swagger_auto_schema(
     method='post',
     tags=["👤 USERS"],
@@ -232,7 +236,7 @@ def logout(request):
     method='get',
     tags=["👤 USERS"],
     operation_summary="List Users",
-    operation_description="**Admin: View all users (search + filter + pagination)**",
+    operation_description="**Superuser: View all users (search + filter + pagination)**",
     manual_parameters=[
         openapi.Parameter('search', openapi.IN_QUERY, type=openapi.TYPE_STRING),
         openapi.Parameter('role', openapi.IN_QUERY, type=openapi.TYPE_STRING),
@@ -243,8 +247,7 @@ def logout(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated]) 
 def users_list(request):
-
-    if request.user.role != "admin":
+    if not is_superuser_request(request):
         return Response({"error": "Permission denied"}, status=403)
     
 
@@ -283,11 +286,11 @@ def user_detail(request, id):
     except User.DoesNotExist:
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
     
-    # Only allow users to view their own details or allow admin users to view any user's details
-    if request.user.id != user.id and  request.user.role != 'admin':
+    # Users can view themselves; only superusers can view any user.
+    if request.user.id != user.id and not is_superuser_request(request):
         return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
     
-    if request.user.role == "admin":
+    if is_superuser_request(request):
         serializer = AdminSerializer(user)
     else:
         serializer = UserSerializer(user)
@@ -307,18 +310,20 @@ def update_user(request, id):
         user = User.objects.get(id=id)
     except User.DoesNotExist:
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-    # Only allow users to update their own details or allow admin users to update any user's details
-    if request.user.id != user.id and request.user.role != 'admin':
+    # Users can update themselves; only superusers can update any user.
+    if request.user.id != user.id and not is_superuser_request(request):
         return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
     
     data = request.data.copy() # Create a mutable copy of the request data to modify it before passing it to the serializer. This allows us to enforce certain rules (like preventing regular users from changing their role) without affecting the original request data.
 
-    # Prevent regular users from changing their role to admin
-    if request.user.role != 'admin':
-        data.pop('role', None) # Remove the 'role' field from the data if the user is a staff member but not a superuser, preventing them from changing their role to admin. This ensures that only superusers can assign admin roles, while regular staff members cannot elevate their own privileges. The pop() method is used to remove the 'role' field from the data dictionary, and the second argument (None) prevents it from raising a KeyError if 'role' is not present in the data.
+    # Only superusers can change privileged fields.
+    if not is_superuser_request(request):
+        data.pop('role', None)
+        data.pop('is_staff', None)
+        data.pop('is_superuser', None)
+        data.pop('is_active', None)
     
-    # admin can edit role, regular users cannot
-    if request.user.role == 'admin':
+    if is_superuser_request(request):
         serializer = AdminUserSerializer(user, data=data, partial=True) 
     else:
         serializer = UpdateSerializer(user, data=data, partial=True) 
@@ -334,7 +339,7 @@ def update_user(request, id):
     method='delete',
     tags=["👤 USERS"],
     operation_summary="Delete User",
-    operation_description="**Admin deletes a user**",
+    operation_description="**Superuser deletes a user**",
     manual_parameters=[
         openapi.Parameter('id', openapi.IN_PATH, type=openapi.TYPE_INTEGER)
     ]
@@ -343,13 +348,16 @@ def update_user(request, id):
 @permission_classes([IsAuthenticated]) 
 def delete_user(request, id):
 
-    if request.user.role !='admin':
+    if not is_superuser_request(request):
         return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
     
     try:
         user=User.objects.get(id=id)
     except User.DoesNotExist:
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.user.id == user.id:
+        return Response({"error": "You cannot delete your own account from this endpoint"}, status=status.HTTP_400_BAD_REQUEST)
     
     user.delete()
     return Response({"message": "User deleted successfully"}, status=status.HTTP_204_NO_CONTENT)

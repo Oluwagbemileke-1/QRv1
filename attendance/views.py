@@ -24,6 +24,14 @@ from .utils import validate_qr_code
 
 # Create your views here.
 
+
+def is_event_admin(user):
+    return bool(user and user.is_authenticated and (user.role == "admin" or user.is_superuser))
+
+
+def can_manage_event(user, event):
+    return bool(user and user.is_authenticated and (user.is_superuser or event.created_by_id == user.id))
+
 def calculate_distance(lat1,lon1,lat2,lon2):
     R = 6371000  # meters
 
@@ -70,7 +78,7 @@ def calc_col_widths(data, total_width):
 
 
 def can_view_event_attendance(user, event):
-    if user.role == "admin":
+    if can_manage_event(user, event):
         return True
     return event.attendees.filter(id=user.id).exists()
 
@@ -265,14 +273,14 @@ def my_event_attendance(request, event_id):
     method='get',
     tags=["📊 DASHBOARD"],
     operation_summary="Admin Dashboard",
-    operation_description="**System statistics overview**"
+    operation_description="**System statistics overview for an event admin or superuser**"
 )
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def admin_dashboard(request):
-    if request.user.role != "admin":
+    if not is_event_admin(request.user):
         return Response ({"error":"Not allowed"}, status=status.HTTP_403_FORBIDDEN)
-    admin_events = Event.objects.filter(created_by=request.user, is_active=True)
+    admin_events = Event.objects.filter(is_active=True) if request.user.is_superuser else Event.objects.filter(created_by=request.user, is_active=True)
     total_events = admin_events.count()
     total_users = User.objects.count()
     total_attendance = Attendance.objects.filter(event__in=admin_events).count()
@@ -308,13 +316,16 @@ def admin_dashboard(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def event_dashboard(request,event_id):
-    if request.user.role != 'admin':
+    if not is_event_admin(request.user):
         return Response({"error": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
     
     try:
-        event = Event.objects.get(id=event_id, is_active=True, created_by=request.user)
+        event = Event.objects.get(id=event_id, is_active=True)
     except Event.DoesNotExist:
         return Response({"error":"Event not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if not can_manage_event(request.user, event):
+        return Response({"error": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
     
     total_invited = event.attendees.count()
     total_checked_in = Attendance.objects.filter(event=event).count()
@@ -403,13 +414,16 @@ def live_attendance(request,event_id):
 @permission_classes([IsAuthenticated])
 def event_attendance_admin(request, event_id):
     
-    if request.user.role != "admin":
+    if not is_event_admin(request.user):
         return Response({"error": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
 
     try:
         event = Event.objects.select_related("created_by").get(id=event_id)
     except Event.DoesNotExist:
         return Response({"error": "Event not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if not can_manage_event(request.user, event):
+        return Response({"error": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
 
     records = Attendance.objects.filter(event=event).select_related("user","event")
 
@@ -448,10 +462,12 @@ def event_attendance_admin(request, event_id):
 @permission_classes([IsAuthenticated])
 def export_event_csv(request,event_id):
 
-    if request.user.role != "admin":
+    if not is_event_admin(request.user):
         return Response({"error":"Not allowed"}, status=status.HTTP_403_FORBIDDEN)
 
     event = Event.objects.get(id=event_id)
+    if not can_manage_event(request.user, event):
+        return Response({"error":"Not allowed"}, status=status.HTTP_403_FORBIDDEN)
 
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = f'attachment; filename="{event.title}_attendance.csv"'
@@ -502,13 +518,16 @@ def export_event_csv(request,event_id):
 @permission_classes([IsAuthenticated])
 def export_event_pdf(request, event_id):
 
-    if request.user.role != "admin":
+    if not is_event_admin(request.user):
         return Response({"error": "Not allowed"}, status=403)
 
     try:
         event = Event.objects.select_related("created_by").get(id=event_id)
     except Event.DoesNotExist:
         return Response({"error": "Event not found"}, status=404)
+
+    if not can_manage_event(request.user, event):
+        return Response({"error": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
 
     records = Attendance.objects.filter(event=event).select_related("user", "event")
 
@@ -565,7 +584,7 @@ def export_event_pdf(request, event_id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def export_this_week_csv(request):
-    if request.user.role != "admin":
+    if not request.user.is_superuser:
         return HttpResponse("Not allowed", status=403)
 
     start, end = this_week_range()
@@ -613,7 +632,7 @@ def export_this_week_csv(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def export_this_week_pdf(request):
-    if request.user.role != "admin":
+    if not request.user.is_superuser:
         return Response({"error": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
 
     start, end = this_week_range()
@@ -710,7 +729,7 @@ def export_this_week_pdf(request):
 @permission_classes([IsAuthenticated])
 def export_custom_range_csv(request):
 
-    if request.user.role != "admin":
+    if not request.user.is_superuser:
         return HttpResponse("Not allowed", status=403)
 
     start_raw = request.GET.get("start_date")
@@ -786,7 +805,7 @@ def export_custom_range_csv(request):
 @permission_classes([IsAuthenticated])
 def export_custom_range_pdf(request):
 
-    if request.user.role != "admin":
+    if not request.user.is_superuser:
         return Response({"error": "Not allowed"}, status=403)
 
     start_raw = request.GET.get("start_date")

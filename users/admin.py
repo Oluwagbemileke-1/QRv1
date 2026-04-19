@@ -1,11 +1,19 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import User, PasswordResetOTP
-# Register your models here.
 
 
 class CustomUserAdmin(UserAdmin):
-    list_display = ('username', 'email', 'first_name', 'last_name', 'phone', 'role', 'is_staff', 'id')
+    list_display = (
+        'username',
+        'email',
+        'first_name',
+        'last_name',
+        'phone',
+        'account_type',
+        'is_staff',
+        'id',
+    )
     ordering = ('username',)
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
@@ -13,19 +21,18 @@ class CustomUserAdmin(UserAdmin):
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
-    
-    # add_fieldsets = (
-    #     (None, {
-    #         'fields': ('username', 'first_name', 'last_name', 'email', 'phone', 'role', 'password1', 'password2'),
-    #     }),
-    # )
+
+    def account_type(self, obj):
+        return obj.display_role
+
+    account_type.short_description = "Account Type"
+
 
 admin.site.register(User, CustomUserAdmin)
 
 
 @admin.register(PasswordResetOTP)
 class PasswordResetOTPAdmin(admin.ModelAdmin):
-
     list_display = (
         'user',
         'is_verified',
@@ -55,14 +62,14 @@ class PasswordResetOTPAdmin(admin.ModelAdmin):
         'time_left_display',
     )
 
-    # 🔥 show if OTP is still valid
     def is_active_display(self, obj):
         if obj.is_expired():
-            return "❌ Expired"
-        return "✅ Active"
+            return "Expired"
+        return "Active"
+
     is_active_display.short_description = "Status"
 
-    # 🔥 countdown timer
     def time_left_display(self, obj):
         return f"{obj.time_left()}s left"
+
     time_left_display.short_description = "Time Left"

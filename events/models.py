@@ -1,5 +1,7 @@
+from datetime import datetime
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 import random,string,uuid
 # Create your models here.
 User = settings.AUTH_USER_MODEL
@@ -32,6 +34,21 @@ class Event(models.Model):
                         self.event_code = code
                         break
             super().save(*args, **kwargs)
+
+    @property
+    def status(self):
+        if not self.is_active:
+            return "deleted"
+
+        start_dt = timezone.make_aware(datetime.combine(self.date, self.start_time))
+        end_dt = timezone.make_aware(datetime.combine(self.date, self.end_time))
+        now = timezone.localtime()
+
+        if now < start_dt:
+            return "upcoming"
+        if start_dt <= now <= end_dt:
+            return "active"
+        return "past"
 
     def __str__(self):
         return f"{self.title}  {(self.created_by)}"

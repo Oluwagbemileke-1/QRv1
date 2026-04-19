@@ -5,6 +5,7 @@ from rest_framework import status
 from django.db.models import Q
 from .models import Event
 from datetime import date
+from django.utils import timezone
 from .serializers import EventSerializer, UpdateEventSerializer,AllSerializer
 from rest_framework.pagination import PageNumberPagination
 from django.contrib.auth import get_user_model
@@ -16,6 +17,38 @@ import re
 from attendance.utils import generate_qr_code
 
 User = get_user_model()
+
+
+def is_event_admin(user):
+    return bool(user and user.is_authenticated and (user.role == "admin" or user.is_superuser))
+
+
+def can_manage_event(user, event):
+    return bool(user and user.is_authenticated and (user.is_superuser or event.created_by_id == user.id))
+
+
+def split_events_by_status(events):
+    now = timezone.localtime()
+    upcoming = []
+    active = []
+    past = []
+
+    for event in events:
+        start_dt = timezone.make_aware(
+            timezone.datetime.combine(event.date, event.start_time)
+        )
+        end_dt = timezone.make_aware(
+            timezone.datetime.combine(event.date, event.end_time)
+        )
+
+        if now < start_dt:
+            upcoming.append(event)
+        elif start_dt <= now <= end_dt:
+            active.append(event)
+        else:
+            past.append(event)
+
+    return upcoming, active, past
 def get_assignment_preview(event, user_ids):
     users = User.objects.filter(id__in=user_ids)
 
@@ -51,18 +84,18 @@ def get_assignment_preview(event, user_ids):
     method='post',
     tags=["📅 EVENTS"],
     operation_summary="Create Event",
-    operation_description="Admin creates a new event",
+    operation_description="Event admin or superuser creates a new event",
     request_body=EventSerializer,
     responses={
         201: openapi.Response("Event created"),
-        403: "Only admins can create events"
+        403: "Only event admins or superusers can create events"
     }
 )
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_event(request):
-    if request.user.role != "admin":
-        return Response({"error": "Only admins can create events"}, status=403)
+    if not is_event_admin(request.user):
+        return Response({"error": "Only event admins or superusers can create events"}, status=403)
     serializer = EventSerializer(data=request.data)
     if serializer.is_valid():
         data = serializer.validated_data
@@ -119,7 +152,7 @@ def generate_event_qr(request, event_id):
     except Event.DoesNotExist:
         return Response({"error": "Event not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    if event.created_by != request.user:
+    if not can_manage_event(request.user, event):
         return Response({"error": "You are not allowed to generate a QR for this event"}, status=status.HTTP_403_FORBIDDEN)
 
     qr_data = generate_qr_code(str(event.id))
@@ -180,13 +213,16 @@ def generate_event_qr(request, event_id):
 @permission_classes([IsAuthenticated])
 def preview_assign(request, event_id):
 
-    if request.user.role != "admin":
-        return Response({"error":"Only admin can preview"}, status=status.HTTP_403_FORBIDDEN)
+    if not is_event_admin(request.user):
+        return Response({"error":"Only event admins or superusers can preview assignments"}, status=status.HTTP_403_FORBIDDEN)
     
     try:
         event= Event.objects.get(id=event_id, is_active=True)
     except Event.DoesNotExist:
         return Response({"error":"Event not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if not can_manage_event(request.user, event):
+        return Response({"error":"Permission denied"}, status=status.HTTP_403_FORBIDDEN)
     
     user_ids = request.data.get("user_ids", [])
     if not user_ids:
@@ -209,13 +245,16 @@ def preview_assign(request, event_id):
     manual_parameters=[
         openapi.Parameter('search', openapi.IN_QUERY, type=openapi.TYPE_STRING),
         openapi.Parameter('date', openapi.IN_QUERY, type=openapi.TYPE_STRING),
+        openapi.Parameter('status', openapi.IN_QUERY, type=openapi.TYPE_STRING),
     ]
 )
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def list_events(request):
-    if request.user.role =="admin":
+    if request.user.is_superuser:
         events = Event.objects.filter(is_active=True).select_related('created_by').order_by('-date')
+    elif request.user.role =="admin":
+        events = Event.objects.filter(created_by=request.user, is_active=True).select_related('created_by').order_by('-date')
     else:
         events = Event.objects.filter(attendees=request.user, is_active=True).select_related('created_by').order_by('-date')
     events = events.order_by('-date')
@@ -228,6 +267,16 @@ def list_events(request):
     filter_date = request.GET.get("date")
     if filter_date:
         events = events.filter(date=filter_date)
+
+    status_filter = request.GET.get("status", "").lower()
+    if status_filter in {"upcoming", "active", "past"}:
+        upcoming, active, past = split_events_by_status(list(events))
+        status_map = {
+            "upcoming": upcoming,
+            "active": active,
+            "past": past,
+        }
+        events = status_map[status_filter]
 
     paginator = PageNumberPagination()
     result_page = paginator.paginate_queryset(events, request)
@@ -267,20 +316,23 @@ def list_events(request):
     responses={
         200: "Assignment successful or preview returned",
         400: "Missing confirmation or invalid input",
-        403: "Admin only"
+        403: "Event admin or superuser only"
     }
 )
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def assign(request, event_id):
-    if request.user.role != "admin":
-        return Response({"error": "Only admin can assign users"}, status=status.HTTP_403_FORBIDDEN)
+    if not is_event_admin(request.user):
+        return Response({"error": "Only event admins or superusers can assign users"}, status=status.HTTP_403_FORBIDDEN)
     
     try:
         event = Event.objects.get(id=event_id, is_active=True)
     except Event.DoesNotExist:
         return Response({"error": "Event not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if not can_manage_event(request.user, event):
+        return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
     
     user_ids = request.data.get("user_ids", [])
     confirm = request.data.get("confirm", False)
@@ -341,8 +393,6 @@ def assign(request, event_id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def my_events(request):
-    today = date.today()
-
     events = Event.objects.filter(attendees=request.user, is_active=True).select_related('created_by')
 
     search = request.GET.get("search")
@@ -357,11 +407,12 @@ def my_events(request):
             date=filter_date
         )
 
-    upcoming = events.filter( date__gte=today)
-    past = events.filter(date__lt=today)
+    event_list = list(events)
+    upcoming, active, past = split_events_by_status(event_list)
 
     return Response ({
         "upcoming": EventSerializer(upcoming, many=True).data,
+        "active": EventSerializer(active, many=True).data,
         "past": EventSerializer(past, many=True).data
     })
 
@@ -386,7 +437,7 @@ def event_detail(request, event_id):
         event = Event.objects.get(id=event_id, is_active=True)
     except Event.DoesNotExist:
         return Response({"error": "Event not found"}, status=status.HTTP_404_NOT_FOUND)
-    if request.user.role != "admin" and not event.attendees.filter(id=request.user.id).exists():
+    if not can_manage_event(request.user, event) and not event.attendees.filter(id=request.user.id).exists():
         return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
     serializer = EventSerializer(event)
     return Response({"success": "Event retrieved", "data": serializer.data}, status=status.HTTP_200_OK)
@@ -409,7 +460,7 @@ def update_event(request, event_id):
     except Event.DoesNotExist:
         return Response({"error": "Event not found"}, status=status.HTTP_404_NOT_FOUND)
     
-    if event.created_by != request.user:
+    if not can_manage_event(request.user, event):
         return Response({"error": "You are not allowed to edit this event"}, status=status.HTTP_403_FORBIDDEN)
     serializer = UpdateEventSerializer(event, data=request.data, partial=True)
 
@@ -430,10 +481,11 @@ def update_event(request, event_id):
         )
     
     existing = Event.objects.filter(
-        created_by=request.user,
         date=data.get("date", event.date),
         is_active=True
     ).exclude(id=event.id)
+    if not request.user.is_superuser:
+        existing = existing.filter(created_by=request.user)
 
     start_time = data.get("start_time", event.start_time)
     end_time = data.get("end_time", event.end_time)
@@ -475,7 +527,7 @@ def delete_event(request, event_id):
     except Event.DoesNotExist:
         return Response({"error":"Event not found"}, status=status.HTTP_404_NOT_FOUND)
     
-    if event.created_by != request.user:
+    if not can_manage_event(request.user, event):
         return Response({"error":"You are not allowed to delete this event."}, status=status.HTTP_403_FORBIDDEN)
     event.is_active = False
     event.save()
@@ -486,7 +538,7 @@ def delete_event(request, event_id):
     method='get',
     tags=["📅 EVENTS"],
     operation_summary="All Events",
-    operation_description="**Admin: view all events**",
+    operation_description="**Superusers can view all events. Event admins see events they created.**",
     manual_parameters=[
     openapi.Parameter('search', openapi.IN_QUERY, type=openapi.TYPE_STRING),
     openapi.Parameter(
@@ -495,13 +547,17 @@ def delete_event(request, event_id):
             description="Filter by date (YYYY-MM-DD)",
             type=openapi.TYPE_STRING
         ),
+    openapi.Parameter('status', openapi.IN_QUERY, type=openapi.TYPE_STRING),
 ],
     responses={200: AllSerializer(many=True)}
 )
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def allevents(request):
-    events = Event.objects.all()
+    if not is_event_admin(request.user):
+        return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+    events = Event.objects.all() if request.user.is_superuser else Event.objects.filter(created_by=request.user)
     search = request.GET.get('search')
     if search:
         events = Event.objects.filter(
@@ -513,6 +569,19 @@ def allevents(request):
         events = events.filter(
             Q(date__exact=eventdate)
         )
+    status_filter = request.GET.get("status", "").lower()
+    if status_filter in {"upcoming", "active", "past", "deleted"}:
+        if status_filter == "deleted":
+            events = events.filter(is_active=False)
+        else:
+            active_events = events.filter(is_active=True)
+            upcoming, active, past = split_events_by_status(list(active_events))
+            status_map = {
+                "upcoming": upcoming,
+                "active": active,
+                "past": past,
+            }
+            events = status_map[status_filter]
     paginator = PageNumberPagination()
     result_page = paginator.paginate_queryset(events, request)
     serializer = AllSerializer(result_page, many=True)
@@ -540,12 +609,13 @@ def allevents(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def event_attendees(request, event_id):
-    if request.user.role != "admin":
-        return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
     try:
         event = Event.objects.select_related('created_by').get(id=event_id, is_active=True)
     except Event.DoesNotExist:
         return Response({"error":"Event not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if not can_manage_event(request.user, event):
+        return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
     
     users = event.attendees.order_by('username')
     search = request.GET.get('search',None)
@@ -563,7 +633,11 @@ def event_attendees(request, event_id):
         {
             "id": user.id,
             "username":user.username,
-            "email":user.email
+            "email":user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "phone": user.phone,
+            "role": user.role,
         }
         for user in result_page
     ]
