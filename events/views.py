@@ -125,7 +125,7 @@ def create_event(request):
 
 @swagger_auto_schema(
     method='post',
-    tags=["EVENTS"],
+    tags=["📅 EVENTS"],
     operation_summary="Generate Event QR",
     operation_description="Generate a QR code for an existing event when the owner is ready to start attendance.",
     manual_parameters=[
@@ -144,6 +144,7 @@ def create_event(request):
         404: "Event not found"
     }
 )
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def generate_event_qr(request, event_id):
