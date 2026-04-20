@@ -13,29 +13,30 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
         private readonly IScanAttemptRepository _scanRepository;
         private readonly IQrCodeRepository _qrCodeRepository;
         private readonly IFraudService _fraudService;
-        private readonly IGeolocationService _geolocationService; 
         private readonly ILogger<ScanService> _logger;
         private readonly string _secretKey;
         private static readonly TimeZoneInfo _watZone =
-    TimeZoneInfo.FindSystemTimeZoneById("Africa/Lagos");
+            TimeZoneInfo.FindSystemTimeZoneById("Africa/Lagos");
 
         public ScanService(
             IScanAttemptRepository scanRepository,
             IQrCodeRepository qrCodeRepository,
             IFraudService fraudService,
-            IGeolocationService geolocationService,
             ILogger<ScanService> logger,
             IConfiguration configuration)
         {
             _scanRepository = scanRepository;
             _qrCodeRepository = qrCodeRepository;
             _fraudService = fraudService;
-            _geolocationService = geolocationService;
             _logger = logger;
             _secretKey = configuration["QrSettings:SecretKey"];
         }
 
-        public async Task<ScanResponseDto> ProcessScanAsync(string payload, string? ipAddress, string username)
+        public async Task<ScanResponseDto> ProcessScanAsync(
+            string payload,
+            string? ipAddress,
+            string username,
+            string? location = null)
         {
             try
             {
@@ -48,7 +49,7 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                     {
                         Result = ScanResults.InvalidPayload,
                         Message = "Invalid QR code payload",
-                        ScannedAt = DateTime.UtcNow
+                        ScannedAt = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _watZone)
                     };
                 }
 
@@ -68,11 +69,11 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                     {
                         Result = ScanResults.InvalidPayload,
                         Message = "Invalid QR code",
-                        ScannedAt = DateTime.UtcNow
+                        ScannedAt = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _watZone)
                     };
                 }
 
-                // 3. Check expiry — fixed: DateTimeKind.Utc ensures correct comparison
+                // 3. Check expiry
                 var expiry = new DateTime(long.Parse(expiryTicks), DateTimeKind.Utc);
                 if (DateTime.UtcNow > expiry)
                 {
@@ -81,7 +82,7 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                     {
                         Result = ScanResults.Expired,
                         Message = "QR code expired",
-                        ScannedAt = DateTime.UtcNow
+                        ScannedAt = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _watZone)
                     };
                 }
 
@@ -93,16 +94,14 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                     {
                         Result = ScanResults.NotFound,
                         Message = "QR code not found",
-                        ScannedAt = DateTime.UtcNow
+                        ScannedAt = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _watZone)
                     };
                 }
 
-                // 5. Run fraud checks (duplicate IP, rapid rescan, already attended etc.)
+                // 5. Run fraud checks
                 var isFraud = await _fraudService.CheckForFraudAsync(
                     ipAddress, username, eventId, qrCode, payload
                 );
-
-                var location = await _geolocationService.GetLocationAsync(ipAddress); // 👈
 
                 if (isFraud)
                 {
@@ -114,7 +113,7 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                     {
                         Result = ScanResults.Fraud,
                         Message = "Fraudulent scan attempt detected",
-                        ScannedAt = DateTime.UtcNow
+                        ScannedAt = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _watZone)
                     };
                 }
 
@@ -131,7 +130,7 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                 {
                     Result = ScanResults.Success,
                     Message = "Attendance marked successfully",
-                    ScannedAt = DateTime.UtcNow
+                    ScannedAt = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _watZone)
                 };
             }
             catch (Exception ex)
@@ -154,7 +153,7 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                     IpAddress = s.IpAddress,
                     Result = s.Result,
                     Location = s.Location,
-                    ScannedAt = TimeZoneInfo.ConvertTimeFromUtc(s.ScannedAt, _watZone) // 👈
+                    ScannedAt = TimeZoneInfo.ConvertTimeFromUtc(s.ScannedAt, _watZone)
                 }).ToList();
 
                 _logger.LogInformation("Retrieved {Count} scans for EventId: {EventId}", result.Count, eventId);
@@ -180,7 +179,7 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                     IpAddress = s.IpAddress,
                     Result = s.Result,
                     Location = s.Location,
-                    ScannedAt = s.ScannedAt
+                    ScannedAt = TimeZoneInfo.ConvertTimeFromUtc(s.ScannedAt, _watZone)
                 }).ToList();
 
                 _logger.LogInformation("Retrieved {Count} successful scans for EventId: {EventId}", result.Count, eventId);
@@ -221,7 +220,7 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching event stats for EventId: {Eventd}", eventId);
+                _logger.LogError(ex, "Error fetching event stats for EventId: {EventId}", eventId);
                 throw;
             }
         }

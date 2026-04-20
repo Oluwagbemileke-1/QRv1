@@ -39,7 +39,8 @@ namespace QRSystem.API.Controllers
                 var result = await _scanService.ProcessScanAsync(
                     payload: request.Payload,
                     ipAddress: ipAddress,
-                    username: request.Username
+                    username: request.Username,
+                    location: request.Location
                 );
 
                 if (result.Result == Core.Constants.ScanResults.Success)

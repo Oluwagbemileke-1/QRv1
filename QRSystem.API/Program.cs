@@ -10,7 +10,6 @@ using QRSystem.API.Infrastructure.Repositories.Implementations;
 using QRSystem.API.Infrastructure.Repositories.Interfaces;
 using QRSystem.API.Services.Interfaces;
 using Serilog;
-using static QRSystem.API.Services.Implementation.GeoLocationService;
 
 
 // Top of Program.cs, before var builder = ...
@@ -71,8 +70,6 @@ builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>()
 builder.Services.Configure<QrSettings>(
     builder.Configuration.GetSection("QrSettings")
 );
-
-builder.Services.AddHttpClient<IGeolocationService, GeolocationService>();
 
 
 var app = builder.Build();
