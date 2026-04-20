@@ -163,7 +163,6 @@ REST_FRAMEWORK = {
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"  # Fallback, but we'll use Brevo API
 BREVO_API_KEY = os.getenv('BREVO_API_KEY')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'QRAMS <me@oluwaseunapata.com>')
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://127.0.0.1:8000')
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),  # Access token valid for 24 hours

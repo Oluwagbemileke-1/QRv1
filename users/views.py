@@ -18,6 +18,7 @@ from drf_yasg import openapi
 from .tasks import send_welcome_email,send_otp,password_changed,resend_otp_email,verify_email_task,resend_verify_email_task
 from django.conf import settings
 from django.core.mail import send_mail
+from django.http import HttpResponse
 
 
 User = get_user_model() # Get the custom user model defined in users/models.py
@@ -42,6 +43,9 @@ def register(request):
     if serializer.is_valid():
        user = serializer.save(is_active=False,is_verified=False)
        user.save()
+
+       # Invalidate any older verification links for this user before issuing a new one.
+       EmailVerification.objects.filter(user=user).delete()
 
        raw_token = EmailVerification.generate_token()
        hashed = EmailVerification.hash_token(raw_token)
@@ -82,7 +86,8 @@ def register(request):
         )
     ],
     tags=["👤 USERS"],
-    operation_summary="Verify Email"
+    operation_summary="Verify Email",
+    operation_description="Verify the user's email when the link is opened."
 )
 @api_view(["GET"])
 def verify_email(request, token):
@@ -90,28 +95,44 @@ def verify_email(request, token):
     try:
         verification = EmailVerification.objects.get(token_hash=token_hash)
     except EmailVerification.DoesNotExist:
-        return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
-    
+        return HttpResponse(
+            "<h2>Invalid verification link</h2><p>This verification link is invalid or no longer available.</p>",
+            status=400
+        )
+
+    user = verification.user
+
     if verification.is_expired():
         verification.delete()
-        return Response({"error": "Link expired"}, status=status.HTTP_400_BAD_REQUEST)
+        return HttpResponse(
+            "<h2>Verification link expired</h2><p>Please request a new verification email.</p>",
+            status=400
+        )
     
-    if verification.is_verified:
-        return Response({"message":"Already verified"})
+    if user.is_verified and user.is_active:
+        return HttpResponse(
+            "<h2>Email already verified</h2><p>Your account is already verified. You can log in now.</p>",
+            status=200
+        )
     
-    if verification.used:
-        return Response({"error": "Link already used"})
+    if verification.is_verified or verification.used:
+        return HttpResponse(
+            "<h2>Email already verified</h2><p>Your account is already verified. You can log in now.</p>",
+            status=200
+        )
     
     verification.used = True
     verification.is_verified = True
-    verification.save()
+    verification.save(update_fields=["used", "is_verified"])
 
-    user = verification.user
     user.is_active = True
-    user.is_verified=True
-    user.save()
+    user.is_verified = True
+    user.save(update_fields=["is_active", "is_verified"])
     send_welcome_email(user.email, user.first_name)
-    return Response({"message":"Email verified successfully"})
+    return HttpResponse(
+        "<h2>Email verified successfully</h2><p>Your account has been verified. You can log in now.</p>",
+        status=200
+    )
 
 @swagger_auto_schema(
     method='post',
@@ -149,6 +170,9 @@ def resend_verification(request):
 
         last_verification.is_verified = False
         last_verification.save()
+
+    # Ensure only the newest verification link remains usable.
+    EmailVerification.objects.filter(user=user).delete()
 
     raw_token = EmailVerification.generate_token()
     hashed = EmailVerification.hash_token(raw_token)
