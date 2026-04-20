@@ -53,7 +53,7 @@ def register(request):
 
        EmailVerification.objects.create(user=user,token_hash=hashed)
        domain = request.get_host()
-       verification_link = f"http://{domain}/api/users/verify-email/{raw_token}"
+       verification_link = f"{settings.FRONTEND_URL.rstrip('/' )}/verify-email/{raw_token}"
        try:
            email_sent = verify_email_task(user.first_name, verification_link, user.email)
        except Exception as e:
@@ -178,7 +178,7 @@ def resend_verification(request):
     hashed = EmailVerification.hash_token(raw_token)
     EmailVerification.objects.create(user=user, token_hash=hashed)
     domain = request.get_host()
-    verification_link = f"http://{domain}/api/users/verify-email/{raw_token}"
+    verification_link = f"{settings.FRONTEND_URL.rstrip('/' )}/verify-email/{raw_token}"
     resend_verify_email_task(user.first_name, verification_link, user.email)
 
     return Response({"message": "Verification email resent","email": user.email}, status=status.HTTP_200_OK)
@@ -619,3 +619,5 @@ def resend_otp(request):
         "status": "success",
         "message": "OTP resent successfully"
     })
+
+
