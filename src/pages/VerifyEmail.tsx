@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { useParams, Link, useSearchParams } from "react-router-dom";
+import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { verifyEmail, resendVerificationEmail } from "../api/auth";
 import "./Auth.css";
 
 type State = "pending" | "loading" | "success" | "already" | "expired" | "used" | "invalid";
 
 export default function VerifyEmail() {
+  const navigate = useNavigate();
   const { token } = useParams<{ token: string }>();
   const [searchParams] = useSearchParams();
   const initialEmail = searchParams.get("email") || "";
@@ -47,6 +48,18 @@ export default function VerifyEmail() {
         }
       });
   }, [token]);
+
+  useEffect(() => {
+    if (state !== "success" && state !== "already") {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      navigate("/login");
+    }, 3000);
+
+    return () => window.clearTimeout(timer);
+  }, [navigate, state]);
 
   const handleResend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,7 +159,7 @@ export default function VerifyEmail() {
               </svg>
             </div>
             <h2 className="verify-title">Email verified!</h2>
-            <p className="verify-sub">Your account is now active. You can sign in.</p>
+            <p className="verify-sub">Your account is now active. You can sign in. Redirecting you to login...</p>
             <Link
               to="/login"
               className="auth-btn"
@@ -166,7 +179,7 @@ export default function VerifyEmail() {
               </svg>
             </div>
             <h2 className="verify-title">Already verified</h2>
-            <p className="verify-sub">This email is already verified. Go ahead and sign in.</p>
+            <p className="verify-sub">This email is already verified. Redirecting you to login...</p>
             <Link
               to="/login"
               className="auth-btn"
