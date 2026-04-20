@@ -1,4 +1,5 @@
 using AspNetCoreRateLimit;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using QR.API.Services.Implementations;
 using QRSystem.API.BackgroundServices;
@@ -9,6 +10,11 @@ using QRSystem.API.Infrastructure.Repositories.Implementations;
 using QRSystem.API.Infrastructure.Repositories.Interfaces;
 using QRSystem.API.Services.Interfaces;
 using Serilog;
+using static QRSystem.API.Services.Implementation.GeoLocationService;
+
+
+// Top of Program.cs, before var builder = ...
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", false);
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,9 +35,13 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
-        npgsqlOptions => npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "qr_schema") // ? add this
+        npgsqlOptions =>
+        {
+            npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "qr_schema");
+        }
     )
 );
+
 builder.Services.AddScoped<IQrCodeRepository, QrCodeRepository>();
 builder.Services.AddScoped<IScanAttemptRepository, ScanAttemptRepository>();
 builder.Services.AddScoped<IFraudLogRepository, FraudLogRepository>();
@@ -58,13 +68,19 @@ builder.Services.Configure<IpRateLimitOptions>(options =>
 builder.Services.AddInMemoryRateLimiting();
 builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
 
-builder.Services.AddMemoryCache();
-
 builder.Services.Configure<QrSettings>(
     builder.Configuration.GetSection("QrSettings")
 );
 
+builder.Services.AddHttpClient<IGeolocationService, GeolocationService>();
+
+
 var app = builder.Build();
+
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
 
 app.UseSerilogRequestLogging();
 

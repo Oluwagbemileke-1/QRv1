@@ -16,6 +16,8 @@ namespace QR.API.Services.Implementations
         private readonly IScanAttemptRepository _scanRepository;
         private readonly QrSettings _settings;
         private readonly ILogger<FraudService> _logger;
+        private static readonly TimeZoneInfo _watZone =
+       TimeZoneInfo.FindSystemTimeZoneById("Africa/Lagos");
 
         public FraudService(
             IFraudLogRepository fraudLogRepository,
@@ -192,7 +194,7 @@ namespace QR.API.Services.Implementations
                     IpAddress = f.IpAddress,
                     Reason = f.Reason,
                     Details = f.Details,
-                    DetectedAt = f.DetectedAt
+                    DetectedAt = TimeZoneInfo.ConvertTimeFromUtc(f.DetectedAt, _watZone) 
                 }).ToList();
 
                 _logger.LogInformation("Retrieved {Count} fraud logs for EventId: {EventId}", result.Count, eventId);
@@ -249,7 +251,7 @@ namespace QR.API.Services.Implementations
                 return false;
             }
 
-            var expiry = new DateTime(long.Parse(expiryTicks));
+            var expiry = new DateTime(long.Parse(expiryTicks), DateTimeKind.Utc);
 
             if (DateTime.UtcNow > expiry)
             {

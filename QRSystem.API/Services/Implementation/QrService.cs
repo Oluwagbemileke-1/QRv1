@@ -15,6 +15,8 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
         private readonly IQrCodeRepository _qrCodeRepository;
         private readonly QrSettings _settings;
         private readonly ILogger<QrService> _logger;
+        private static readonly TimeZoneInfo _watZone =
+        TimeZoneInfo.FindSystemTimeZoneById("Africa/Lagos");
 
         public QrService(
             IQrCodeRepository qrCodeRepository,
@@ -57,9 +59,8 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                     Id = qrCode.Id,
                     EventId = qrCode.EventId,
                     ImageUrl = qrCode.ImageUrl,
-                    GeneratedAt = qrCode.GeneratedAt,
-                    ExpiresAt = qrCode.ExpiresAt,
-                    //Payload = payload
+                    GeneratedAt = TimeZoneInfo.ConvertTimeFromUtc(qrCode.GeneratedAt, _watZone),
+                    ExpiresAt = TimeZoneInfo.ConvertTimeFromUtc(qrCode.ExpiresAt, _watZone),
                 };
             }
             catch (Exception ex)

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using QRSystem.API.Core.Data;
@@ -11,9 +12,11 @@ using QRSystem.API.Core.Data;
 namespace QRSystem.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260420091950_MoveToQrSchema")]
+    partial class MoveToQrSchema
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -58,7 +61,7 @@ namespace QRSystem.API.Migrations
 
                     b.HasIndex("QrCodeId");
 
-                    b.ToTable("FraudLogs", (string)null);
+                    b.ToTable("FraudLogs");
                 });
 
             modelBuilder.Entity("QRSystem.API.Core.Models.QrCode", b =>
@@ -94,7 +97,7 @@ namespace QRSystem.API.Migrations
 
                     b.HasIndex("EventId", "IsActive");
 
-                    b.ToTable("QrCodes", (string)null);
+                    b.ToTable("QrCodes");
                 });
 
             modelBuilder.Entity("QRSystem.API.Core.Models.ScanAttempt", b =>
@@ -136,7 +139,7 @@ namespace QRSystem.API.Migrations
 
                     b.HasIndex("IpAddress", "EventId");
 
-                    b.ToTable("ScanAttempts", (string)null);
+                    b.ToTable("ScanAttempts");
                 });
 
             modelBuilder.Entity("QRSystem.API.Core.Models.FraudLog", b =>

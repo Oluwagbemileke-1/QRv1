@@ -13,19 +13,24 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
         private readonly IScanAttemptRepository _scanRepository;
         private readonly IQrCodeRepository _qrCodeRepository;
         private readonly IFraudService _fraudService;
+        private readonly IGeolocationService _geolocationService; 
         private readonly ILogger<ScanService> _logger;
         private readonly string _secretKey;
+        private static readonly TimeZoneInfo _watZone =
+    TimeZoneInfo.FindSystemTimeZoneById("Africa/Lagos");
 
         public ScanService(
             IScanAttemptRepository scanRepository,
             IQrCodeRepository qrCodeRepository,
             IFraudService fraudService,
+            IGeolocationService geolocationService,
             ILogger<ScanService> logger,
             IConfiguration configuration)
         {
             _scanRepository = scanRepository;
             _qrCodeRepository = qrCodeRepository;
             _fraudService = fraudService;
+            _geolocationService = geolocationService;
             _logger = logger;
             _secretKey = configuration["QrSettings:SecretKey"];
         }
@@ -97,10 +102,12 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                     ipAddress, username, eventId, qrCode, payload
                 );
 
+                var location = await _geolocationService.GetLocationAsync(ipAddress); // 👈
+
                 if (isFraud)
                 {
                     await _scanRepository.AddAsync(ScanAttempt.Create(
-                        username, ipAddress, qrCode.Id, eventId, ScanResults.Fraud
+                        username, ipAddress, qrCode.Id, eventId, ScanResults.Fraud, location
                     ));
 
                     return new ScanResponseDto
@@ -113,7 +120,7 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
 
                 // 6. Mark attendance
                 await _scanRepository.AddAsync(ScanAttempt.Create(
-                    username, ipAddress, qrCode.Id, eventId, ScanResults.Success
+                    username, ipAddress, qrCode.Id, eventId, ScanResults.Success, location
                 ));
 
                 // 7. Deactivate QR so it can't be reused
@@ -147,7 +154,7 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                     IpAddress = s.IpAddress,
                     Result = s.Result,
                     Location = s.Location,
-                    ScannedAt = s.ScannedAt
+                    ScannedAt = TimeZoneInfo.ConvertTimeFromUtc(s.ScannedAt, _watZone) // 👈
                 }).ToList();
 
                 _logger.LogInformation("Retrieved {Count} scans for EventId: {EventId}", result.Count, eventId);

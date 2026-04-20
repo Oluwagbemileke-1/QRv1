@@ -31,7 +31,9 @@ namespace QRSystem.API.Controllers
 
             try
             {
-                var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+                // Correct way — checks forwarded header first, falls back to direct connection
+                var ipAddress = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault()
+                         ?? HttpContext.Connection.RemoteIpAddress?.ToString();
                 _logger.LogInformation("Processing scan from IP: {IpAddress}, Username: {Username}", ipAddress, request.Username);
 
                 var result = await _scanService.ProcessScanAsync(

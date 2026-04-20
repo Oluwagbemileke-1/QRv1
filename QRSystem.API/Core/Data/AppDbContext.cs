@@ -11,6 +11,11 @@ namespace QRSystem.API.Core.Data
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
         }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", false);
+        }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
