@@ -165,7 +165,7 @@ def generate_event_qr(request, event_id):
     if now > end_dt:
         return Response({"error": "Cannot generate QR for an expired event"}, status=status.HTTP_400_BAD_REQUEST)
 
-    qr_data = generate_qr_code(str(event.id))
+    qr_data = generate_qr_code(event.id, event.event_code)
     if not qr_data:
         return Response({"error": "Failed to generate QR code"}, status=status.HTTP_502_BAD_GATEWAY)
 

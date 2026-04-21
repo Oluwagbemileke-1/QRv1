@@ -32,16 +32,19 @@ DOTNET_API_BASE = os.getenv('DOTNET_API_BASE', 'https://qr-attendance-project-2y
 DOTNET_API_TIMEOUT = int(os.getenv('DOTNET_API_TIMEOUT', '60'))
 
 
-def generate_qr_code(event_id):
+def generate_qr_code(event_id, event_code):
     """
     Call .NET API to generate QR code for an event
     """
-    url = f"{DOTNET_API_BASE}/api/qr/generate/{event_id}"
+    url = f"{DOTNET_API_BASE}/api/qr/generate"
+    payload = {
+        'eventId': str(event_id),
+        'eventCode': event_code,
+    }
     try:
-        response = requests.post(url, timeout=DOTNET_API_TIMEOUT)
+        response = requests.post(url, json=payload, timeout=DOTNET_API_TIMEOUT)
         response.raise_for_status()
         data = response.json()
-        # Assuming data['data'] contains the QR result
         return data.get('data')
     except requests.RequestException as e:
         print(f"Error generating QR: {e}")
