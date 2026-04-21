@@ -10,7 +10,7 @@ class EventAdmin(admin.ModelAdmin):
         'start_time',
         'end_time',
         'event_status',
-        'is_active',
+        'record_state',
         'created_by'
     )
 
@@ -47,8 +47,13 @@ class EventAdmin(admin.ModelAdmin):
 
     event_status.short_description = "Timeline Status"
 
+    def record_state(self, obj):
+        return "Available" if obj.is_active else "Deleted"
+
+    record_state.short_description = "Record State"
+
     def event_status_help(self, obj):
-        return "is_active means the event is not deleted. Timeline Status shows Upcoming, Active, Past, or Deleted."
+        return "Record State means whether the event was soft-deleted. Timeline Status shows Upcoming, Active, Past, or Deleted."
 
     event_status_help.short_description = "Status Help"
 

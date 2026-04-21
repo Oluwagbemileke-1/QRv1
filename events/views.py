@@ -231,6 +231,13 @@ def preview_assign(request, event_id):
 
     if not can_manage_event(request.user, event):
         return Response({"error":"Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+    now = timezone.localtime()
+    end_dt = timezone.make_aware(
+        timezone.datetime.combine(event.date, event.end_time)
+    )
+    if now > end_dt:
+        return Response({"error": "Cannot invite users to an expired event"}, status=status.HTTP_400_BAD_REQUEST)
     
     user_ids = request.data.get("user_ids", [])
     if not user_ids:
@@ -341,6 +348,13 @@ def assign(request, event_id):
 
     if not can_manage_event(request.user, event):
         return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+
+    now = timezone.localtime()
+    end_dt = timezone.make_aware(
+        timezone.datetime.combine(event.date, event.end_time)
+    )
+    if now > end_dt:
+        return Response({"error": "Cannot invite users to an expired event"}, status=status.HTTP_400_BAD_REQUEST)
     
     user_ids = request.data.get("user_ids", [])
     confirm = request.data.get("confirm", False)
