@@ -27,6 +27,9 @@ User = get_user_model() # Get the custom user model defined in users/models.py
 def is_superuser_request(request):
     return bool(request.user and request.user.is_authenticated and request.user.is_superuser)
 
+def is_verified_active_user(user):
+    return bool(user and user.is_active and user.is_verified)
+
 @swagger_auto_schema(
     method='post',
     tags=["👤 USERS"],
@@ -451,6 +454,9 @@ def forgot_password(request):
     if not user:
         return Response({"status": "error", "message":"User not found"}, status=status.HTTP_404_NOT_FOUND)
 
+    if not is_verified_active_user(user):
+        return Response({"status": "error", "message": "Email not verified"}, status=status.HTTP_403_FORBIDDEN)
+
     PasswordResetOTP.objects.filter(user=user).update(used=True)
 
     otp = str(random.randint(100000, 999999))
@@ -494,6 +500,9 @@ def verify_otp(request):
 
     if not user:
             return Response({"status": "error", "message": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if not is_verified_active_user(user):
+        return Response({"status": "error", "message": "Email not verified"}, status=status.HTTP_403_FORBIDDEN)
  
     otp_obj = PasswordResetOTP.objects.filter(user=user, used=False).order_by('-created_at').first()
     if not otp_obj:
@@ -546,6 +555,8 @@ def reset_password(request):
 
     if not user:
         return Response({"status":"error", "message":"User not found"}, status=status.HTTP_404_NOT_FOUND)
+    if not is_verified_active_user(user):
+        return Response({"status": "error", "message": "Email not verified"}, status=status.HTTP_403_FORBIDDEN)
     otp_obj = PasswordResetOTP.objects.filter(user=user, is_verified=True, used=True).order_by('-created_at').first()
     if not otp_obj:
         return Response({"status": "error", "message": "OTP not verified"}, status=status.HTTP_400_BAD_REQUEST)
@@ -590,6 +601,9 @@ def resend_otp(request):
 
     if not user:
         return Response({"status":"error", "message":"User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    if not is_verified_active_user(user):
+        return Response({"status": "error", "message": "Email not verified"}, status=status.HTTP_403_FORBIDDEN)
     
     last_otp = PasswordResetOTP.objects.filter(user=user,used=False).order_by('-created_at').first()
 

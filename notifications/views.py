@@ -19,6 +19,9 @@ from .tasks import send_email_task
 @permission_classes([IsAuthenticated])
 def resend_email(request, log_id):
 
+    if not request.user.is_superuser:
+        return Response({"error": "Permission denied"}, status=403)
+
     try:
         log = EmailLog.objects.get(id=log_id)
 

@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include, re_path
 from rest_framework import permissions
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from users.token_views import VerifiedTokenObtainPairView, VerifiedTokenRefreshView
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
@@ -39,8 +39,8 @@ urlpatterns = [
     path('api/notifications/', include('notifications.urls')),
 
     # JWT token endpoints 
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'), #login endpoint
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), #refresh token endpoint
+    path('api/token/', VerifiedTokenObtainPairView.as_view(), name='token_obtain_pair'), #login endpoint
+    path('api/token/refresh/', VerifiedTokenRefreshView.as_view(), name='token_refresh'), #refresh token endpoint
 
     # Swagger UI:
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
