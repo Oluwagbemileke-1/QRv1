@@ -15,6 +15,8 @@ from drf_yasg import openapi
 from events.tasks import send_invitation_email,create_event_email,send_bulk_invitation_email
 import re
 from attendance.utils import generate_qr_code
+from django.conf import settings
+from urllib.parse import quote
 
 User = get_user_model()
 
@@ -167,10 +169,19 @@ def generate_event_qr(request, event_id):
     if not qr_data:
         return Response({"error": "Failed to generate QR code"}, status=status.HTTP_502_BAD_GATEWAY)
 
+    payload = qr_data.get("payload") if isinstance(qr_data, dict) else None
+    check_in_url = None
+    if payload:
+        encoded_payload = quote(payload, safe="")
+        check_in_url = f"{settings.FRONTEND_URL.rstrip('/')}/check-in?event_code={event.event_code}&payload={encoded_payload}"
+
     return Response({
         "message": "QR code generated successfully",
         "event_id": str(event.id),
+        "event_code": event.event_code,
         "event_title": event.title,
+        "payload": payload,
+        "check_in_url": check_in_url,
         "data": qr_data
     }, status=status.HTTP_200_OK)
 
