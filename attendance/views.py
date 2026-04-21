@@ -585,7 +585,7 @@ def export_event_pdf(request, event_id):
 @permission_classes([IsAuthenticated])
 def export_this_week_csv(request):
     if not request.user.is_superuser:
-        return HttpResponse("Not allowed", status=403)
+        return Response({"error": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
 
     start, end = this_week_range()
 
@@ -730,7 +730,7 @@ def export_this_week_pdf(request):
 def export_custom_range_csv(request):
 
     if not request.user.is_superuser:
-        return HttpResponse("Not allowed", status=403)
+        return Response({"error": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
 
     start_raw = request.GET.get("start_date")
     end_raw = request.GET.get("end_date")

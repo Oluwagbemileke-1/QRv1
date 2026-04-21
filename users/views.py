@@ -18,7 +18,6 @@ from drf_yasg import openapi
 from .tasks import send_welcome_email,send_otp,password_changed,resend_otp_email,verify_email_task,resend_verify_email_task
 from django.conf import settings
 from django.core.mail import send_mail
-from django.http import HttpResponse
 
 
 User = get_user_model() # Get the custom user model defined in users/models.py
@@ -98,34 +97,43 @@ def verify_email(request, token):
     try:
         verification = EmailVerification.objects.get(token_hash=token_hash)
     except EmailVerification.DoesNotExist:
-        return HttpResponse(
-            "<h2>Invalid verification link</h2><p>This verification link is invalid or no longer available.</p>",
-            status=400
+        return Response(
+            {
+                "status": "error",
+                "message": "Invalid verification link"
+            },
+            status=status.HTTP_400_BAD_REQUEST
         )
 
     user = verification.user
 
     if verification.is_expired():
         verification.delete()
-        return HttpResponse(
-            "<h2>Verification link expired</h2><p>Please request a new verification email.</p>",
-            status=400
+        return Response(
+            {
+                "status": "error",
+                "message": "Verification link expired. Please request a new verification email."
+            },
+            status=status.HTTP_400_BAD_REQUEST
         )
     
     if user.is_verified and user.is_active:
-        return HttpResponse(
-            "<h2>Email already verified</h2><p>Your account is already verified. You can log in now.</p>",
-            status=200
+        return Response(
+            {
+                "status": "already_verified",
+                "message": "Your account is already verified. You can log in now."
+            },
+            status=status.HTTP_200_OK
         )
     
     if verification.is_verified or verification.used:
         return Response(
-        {
-            "status" : "already verified",
-            "message": "Your accoubt is already verified. You can log in now. "
-        },
-        status=status.HTTP_200_OK
-    )
+            {
+                "status": "already_verified",
+                "message": "Your account is already verified. You can log in now."
+            },
+            status=status.HTTP_200_OK
+        )
     
     verification.used = True
     verification.is_verified = True
