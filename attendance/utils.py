@@ -29,6 +29,7 @@ def parse_datetime(date_str):
 
 # .NET API integration functions
 DOTNET_API_BASE = os.getenv('DOTNET_API_BASE', 'https://qr-attendance-project-2yh5.onrender.com')
+DOTNET_API_TIMEOUT = int(os.getenv('DOTNET_API_TIMEOUT', '60'))
 
 
 def generate_qr_code(event_id):
@@ -37,7 +38,7 @@ def generate_qr_code(event_id):
     """
     url = f"{DOTNET_API_BASE}/api/qr/generate/{event_id}"
     try:
-        response = requests.post(url, timeout=10)
+        response = requests.post(url, timeout=DOTNET_API_TIMEOUT)
         response.raise_for_status()
         data = response.json()
         # Assuming data['data'] contains the QR result
@@ -57,7 +58,7 @@ def validate_qr_code(qr_data, username):
         'username': username
     }
     try:
-        response = requests.post(url, json=payload, timeout=10)
+        response = requests.post(url, json=payload, timeout=DOTNET_API_TIMEOUT)
         if response.status_code == 200:
             data = response.json()
             result = data.get('data', {})
@@ -85,7 +86,7 @@ def get_attendance_count(event_id):
     """
     url = f"{DOTNET_API_BASE}/api/scan/event/{event_id}/count"
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, timeout=DOTNET_API_TIMEOUT)
         response.raise_for_status()
         data = response.json()
         return data.get('data', {}).get('attendanceCount', 0)
@@ -100,7 +101,7 @@ def get_event_stats(event_id):
     """
     url = f"{DOTNET_API_BASE}/api/scan/event/{event_id}/stats"
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, timeout=DOTNET_API_TIMEOUT)
         response.raise_for_status()
         data = response.json()
         return data.get('data')
