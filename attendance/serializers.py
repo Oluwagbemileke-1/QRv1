@@ -6,16 +6,14 @@ class AttendanceCheckInSerializer(serializers.Serializer):
     latitude = serializers.FloatField(required=False, allow_null=True)
     longitude = serializers.FloatField(required=False, allow_null=True)
     event_code = serializers.CharField()
-    qr_payload = serializers.CharField(required=False, allow_blank=False)
     payload = serializers.CharField(required=False, allow_blank=False)
 
     def validate(self, attrs):
-        qr_payload = attrs.get("qr_payload") or attrs.get("payload")
-        if not qr_payload:
+        payload = attrs.get("payload")
+        if not payload:
             raise serializers.ValidationError({
-                "qr_payload": "This field is required."
+                "payload": "This field is required."
             })
-        attrs["qr_payload"] = qr_payload
         return attrs
 
 

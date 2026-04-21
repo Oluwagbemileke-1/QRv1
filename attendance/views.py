@@ -87,7 +87,7 @@ def can_view_event_attendance(user, event):
     method='post',
     tags=["📍 ATTENDANCE"],
     operation_summary="Check In",
-    operation_description="**User checks into an event using event code, scanned QR payload, and optional location**",
+    operation_description="**User checks into an event using event code, payload, and optional location**",
     request_body=AttendanceCheckInSerializer
 )
 @api_view(['POST'])
@@ -99,7 +99,7 @@ def check_in(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     data = serializer.validated_data
     event_code = data["event_code"]
-    qr_payload = data["qr_payload"]
+    payload = data["payload"]
     userlat = data.get("latitude")
     userlon = data.get("longitude")
     try:
@@ -108,7 +108,7 @@ def check_in(request):
         return Response({"error":"Invalid event code"}, status=status.HTTP_404_NOT_FOUND)
     
     # Validate QR with .NET API
-    validation = validate_qr_code(qr_payload, request.user.username)
+    validation = validate_qr_code(payload, request.user.username)
     if not validation['valid']:
         if validation['fraud_detected']:
             return Response({"error": "Fraudulent scan detected"}, status=status.HTTP_403_FORBIDDEN)
