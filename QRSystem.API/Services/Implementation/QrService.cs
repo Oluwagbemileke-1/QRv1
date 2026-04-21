@@ -38,6 +38,8 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                 _logger.LogDebug("Deactivating expired QR codes before generating new one for EventId: {EventId}", eventId);
                 await _qrCodeRepository.DeactivateExpiredQrCodesAsync();
 
+
+
                 // build the payload - what gets encoded into the QR image
                 var payload = GeneratePayload(eventId);
                 _logger.LogDebug("Payload generated for EventId: {EventId}", eventId);
