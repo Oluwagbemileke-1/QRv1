@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import update_last_login
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework_simplejwt.exceptions import AuthenticationFailed
@@ -13,6 +14,7 @@ class VerifiedTokenObtainPairSerializer(TokenObtainPairSerializer):
         data = super().validate(attrs)
         if not getattr(self.user, "is_verified", False):
             raise AuthenticationFailed("Email not verified")
+        update_last_login(None, self.user)
         return data
 
 

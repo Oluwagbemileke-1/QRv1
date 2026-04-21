@@ -5,6 +5,7 @@ from .serializers import RegisterSerializer, UserSerializer, ChangePasswordSeria
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import update_last_login
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db.models import Q
 from .models import PasswordResetOTP,EmailVerification
@@ -233,7 +234,8 @@ def login(request):
     if not user.is_verified:
         return Response({"error":"Email not verified"}, status=status.HTTP_403_FORBIDDEN)
     refresh = RefreshToken.for_user(user)
-    
+    update_last_login(None, user)
+
     return Response({
         "message": "Login successful",
         "access": str(refresh.access_token),
