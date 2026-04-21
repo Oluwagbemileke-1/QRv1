@@ -156,6 +156,13 @@ def generate_event_qr(request, event_id):
     if not can_manage_event(request.user, event):
         return Response({"error": "You are not allowed to generate a QR for this event"}, status=status.HTTP_403_FORBIDDEN)
 
+    now = timezone.localtime()
+    end_dt = timezone.make_aware(
+        timezone.datetime.combine(event.date, event.end_time)
+    )
+    if now > end_dt:
+        return Response({"error": "Cannot generate QR for an expired event"}, status=status.HTTP_400_BAD_REQUEST)
+
     qr_data = generate_qr_code(str(event.id))
     if not qr_data:
         return Response({"error": "Failed to generate QR code"}, status=status.HTTP_502_BAD_GATEWAY)
