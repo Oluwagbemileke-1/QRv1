@@ -7,7 +7,7 @@
         public string ImageUrl { get; set; } = string.Empty;
         public DateTimeOffset GeneratedAt { get; set; }
         public DateTimeOffset ExpiresAt { get; set; }
-        //public string? Payload { get; set; }
+        public string? Payload { get; set; }
 
     }
 }

@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using QRSystem.API.Core.DTOs;
 using QRSystem.API.Core.Models;
 using QRSystem.API.Services.Interfaces;
-using System.Diagnostics.Tracing;
 
 namespace QRSystem.API.Controllers
 {
@@ -18,24 +18,23 @@ namespace QRSystem.API.Controllers
             _logger = logger;
         }
 
-        // POST api/qr/generate/{eventId}
-        // admin calls this to generate a new QR for an event
-        [HttpPost("generate/{eventId}")]
-        public async Task<IActionResult> GenerateQr(Guid eventId)
+        [HttpPost("generate")]
+        public async Task<IActionResult> GenerateQr([FromBody] GenerateQrRequestDto request)
         {
             try
             {
-                _logger.LogInformation("Generating QR code for EventId: {EventId}", eventId);
-                var result = await _qrService.GenerateQrAsync(eventId);
-                _logger.LogInformation("QR code generated successfully for EventId: {EventId}", eventId);
+                _logger.LogInformation("Generating QR code for EventId: {EventId}", request.EventId);
+
+                var result = await _qrService.GenerateQrAsync(request.EventId, request.EventCode);
+
+                _logger.LogInformation("QR code generated successfully for EventId: {EventId}", request.EventId);
                 return Ok(GenericResponse<object>.Success(result, "QR code generated successfully"));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error generating QR code for EventId: {EventId}", eventId);
+                _logger.LogError(ex, "Error generating QR code for EventId: {EventId}", request.EventId);
                 return StatusCode(500, GenericResponse<object>.Failure("An error occurred while generating the QR code", "500"));
             }
         }
     }
 }
-
