@@ -295,6 +295,8 @@ def users_list(request):
     
 
     users = User.objects.all().order_by('id')
+    if not request.user.is_superuser:
+        users = users.filter(is_superuser=False)
     search_query = request.GET.get('search', None)
     if search_query:
         users = users.filter(
