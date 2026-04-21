@@ -290,7 +290,7 @@ def logout(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated]) 
 def users_list(request):
-    if not is_superuser_request(request):
+    if not (is_superuser_request(request) or (request.user and request.user.is_authenticated and request.user.role == "admin")):
         return Response({"error": "Permission denied"}, status=403)
     
 
