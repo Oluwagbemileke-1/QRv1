@@ -119,10 +119,13 @@ def verify_email(request, token):
         )
     
     if verification.is_verified or verification.used:
-        return HttpResponse(
-            "<h2>Email already verified</h2><p>Your account is already verified. You can log in now.</p>",
-            status=200
-        )
+        return Response(
+        {
+            "status" : "already verified",
+            "message": "Your accoubt is already verified. You can log in now. "
+        },
+        status=status.HTTP_200_OK
+    )
     
     verification.used = True
     verification.is_verified = True
@@ -132,9 +135,12 @@ def verify_email(request, token):
     user.is_verified = True
     user.save(update_fields=["is_active", "is_verified"])
     send_welcome_email(user.email, user.first_name)
-    return HttpResponse(
-        "<h2>Email verified successfully</h2><p>Your account has been verified. You can log in now.</p>",
-        status=200
+    return Response(
+        {
+            "status" : "success",
+            "message": "Email verified successfully. You can log in now. "
+        },
+        status=status.HTTP_200_OK
     )
 
 @swagger_auto_schema(
