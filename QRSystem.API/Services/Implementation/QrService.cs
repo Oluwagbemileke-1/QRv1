@@ -42,8 +42,11 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                 var payload = GeneratePayload(eventId);
                 _logger.LogDebug("Payload generated for EventId: {EventId}", eventId);
 
-                // build the QR image from the payload
-                var imageUrl = GenerateQrImage(payload);
+                // build the QR image from the frontend check-in URL that includes the payload
+                var checkInUrl =
+                    $"{_settings.FrontendUrl.TrimEnd('/')}/check-in?payload={Uri.EscapeDataString(payload)}";
+
+                var imageUrl = GenerateQrImage(checkInUrl);
                 _logger.LogDebug("QR image generated for EventId: {EventId}", eventId);
 
                 var qrCode = QrCode.Create(eventId, payload, imageUrl);
