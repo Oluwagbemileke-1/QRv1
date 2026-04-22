@@ -9,6 +9,7 @@ export default function VerifyEmail() {
   const { token } = useParams<{ token: string }>();
   const [searchParams] = useSearchParams();
   const initialEmail = searchParams.get("email") || "";
+  const nextPath = searchParams.get("next") || "";
   const [state, setState] = useState<State>(token ? "loading" : "pending");
   const [email, setEmail] = useState("");
   const [resendLoading, setResendLoading] = useState(false);
@@ -72,6 +73,8 @@ export default function VerifyEmail() {
       setResendLoading(false);
     }
   };
+
+  const loginTarget = nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : "/login";
 
   return (
     <div className="auth-wrapper">
@@ -157,7 +160,7 @@ export default function VerifyEmail() {
             <h2 className="verify-title">Email verified!</h2>
             <p className="verify-sub">{serverMessage || "Your account is now active. You can sign in."}</p>
             <Link
-              to="/login"
+              to={loginTarget}
               className="auth-btn"
               style={{ display: "block", textAlign: "center", textDecoration: "none", marginTop: "1.5rem" }}
             >
@@ -177,7 +180,7 @@ export default function VerifyEmail() {
             <h2 className="verify-title">Already verified</h2>
             <p className="verify-sub">{serverMessage || "This email is already verified. You can log in now."}</p>
             <Link
-              to="/login"
+              to={loginTarget}
               className="auth-btn"
               style={{ display: "block", textAlign: "center", textDecoration: "none", marginTop: "1.5rem" }}
             >
@@ -243,7 +246,7 @@ export default function VerifyEmail() {
             )}
 
             <Link
-              to="/login"
+              to={loginTarget}
               className="auth-btn"
               style={{ display: "block", textAlign: "center", textDecoration: "none", marginTop: "1rem" }}
             >
@@ -253,7 +256,7 @@ export default function VerifyEmail() {
         )}
 
         <p className="auth-switch" style={{ marginTop: "1.5rem" }}>
-          <Link to="/login">&larr; Back to login</Link>
+          <Link to={loginTarget}>&larr; Back to login</Link>
         </p>
       </div>
     </div>

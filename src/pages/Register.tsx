@@ -1,6 +1,6 @@
 import { useState } from "react";
 // import type { FormEvent } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { register } from "../api/auth";
 import "./Auth.css";
 
@@ -16,9 +16,11 @@ const INITIAL = {
 
 export default function Register() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [form, setForm] = useState(INITIAL);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const nextPath = new URLSearchParams(location.search).get("next") || "";
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -35,7 +37,11 @@ export default function Register() {
     setError("");
     try {
       await register(form);
-      navigate(`/verify-email?email=${encodeURIComponent(form.email)}`);
+      const params = new URLSearchParams({ email: form.email });
+      if (nextPath) {
+        params.set("next", nextPath);
+      }
+      navigate(`/verify-email?${params.toString()}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Registration failed.");
     } finally {
@@ -49,7 +55,9 @@ export default function Register() {
         <div className="auth-brand">
           <span className="auth-logo">QR</span>
           <h1 className="auth-title">Create account</h1>
-          <p className="auth-subtitle">Fill in your details to get started</p>
+          <p className="auth-subtitle">
+            {nextPath ? "Create your account to continue with this event" : "Fill in your details to get started"}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
@@ -160,7 +168,7 @@ export default function Register() {
 
         <p className="auth-switch">
           Already have an account?{" "}
-          <Link to="/login">Sign in</Link>
+          <Link to={nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : "/login"}>Sign in</Link>
         </p>
       </div>
     </div>
