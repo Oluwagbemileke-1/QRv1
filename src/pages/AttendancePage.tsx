@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getMyAttendance } from "../api/attendance";
 import type { AttendanceRecord, AttendanceSummary, AttendanceStatus } from "../api/attendance";
-import { logout } from "../api/auth";
+import { getStoredUser, getUserDisplayName } from "../api/auth";
 import "./Attendance.css";
 
 type FilterTab = "all" | AttendanceStatus;
@@ -43,20 +43,25 @@ export default function AttendancePage() {
   const [filter, setFilter] = useState<FilterTab>("all");
   const [search, setSearch] = useState("");
 
-  const stored = localStorage.getItem("user");
-  const user = stored ? JSON.parse(stored) : null;
+  const user = getStoredUser();
+  const displayName = getUserDisplayName(user);
+  const isAdmin = user?.role === "admin" || user?.is_superuser || user?.is_staff;
 
   useEffect(() => {
+    if (isAdmin) {
+      navigate("/admin/dashboard", { replace: true });
+      return;
+    }
+
     getMyAttendance()
       .then(setData)
       .catch((err) => setError(err.message || "Failed to load attendance."))
       .finally(() => setLoading(false));
-  }, []);
+  }, [isAdmin, navigate]);
 
-  const handleLogout = async () => {
-    await logout();
-    navigate("/login");
-  };
+  if (isAdmin) {
+    return null;
+  }
 
   const filtered = useMemo<AttendanceRecord[]>(() => {
     if (!data) return [];
@@ -90,11 +95,11 @@ export default function AttendancePage() {
           <nav className="att-nav-links">
             <Link to="/dashboard" className="att-nav-link">Dashboard</Link>
             <span className="att-nav-link att-nav-link--active">Attendance</span>
+            <Link to="/profile" className="att-nav-link">Profile</Link>
           </nav>
         </div>
         <div className="att-nav-right">
-          <span className="att-nav-user">{user?.first_name || user?.username || ""}</span>
-          <button className="att-nav-signout" onClick={handleLogout}>Sign out</button>
+          <span className="att-nav-user">{displayName}</span>
         </div>
       </header>
 

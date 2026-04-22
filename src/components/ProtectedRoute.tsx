@@ -1,5 +1,5 @@
 import { Navigate } from "react-router-dom";
-import { isAuthenticated } from "../api/auth";
+import { getStoredUser, isAuthenticated } from "../api/auth";
 
 interface Props {
   children: React.ReactNode;
@@ -12,11 +12,16 @@ export default function ProtectedRoute({ children, requiredRole }: Props) {
   }
 
   if (requiredRole) {
-    const rawUser = localStorage.getItem("user");
-    const user = rawUser ? (JSON.parse(rawUser) as { role?: string }) : null;
+    const user = getStoredUser();
+    const userRole =
+      user?.role || (user?.is_superuser || user?.is_staff ? "admin" : "user");
 
-    if (requiredRole === "admin" && user?.role !== "admin") {
+    if (requiredRole === "admin" && userRole !== "admin") {
       return <Navigate to="/dashboard" replace />;
+    }
+
+    if (requiredRole === "user" && userRole === "admin") {
+      return <Navigate to="/admin/dashboard" replace />;
     }
   }
 

@@ -5,65 +5,42 @@ import VerifyEmail from "./pages/VerifyEmail";
 import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
 import AttendancePage from "./pages/AttendancePage";
+import CheckInPage from "./pages/CheckInPage";
+import ProfilePage from "./pages/ProfilePage";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminEvents from "./pages/AdminEvents";
+import AdminEventDetail from "./pages/AdminEventDetail.tsx";
+import AdminEventSection from "./pages/AdminEventSection";
+import AdminUsers from "./pages/AdminUsers";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Default */}
         <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* ── Public auth routes ── */}
+        {/* ── Public ── */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-
-        {/*
-          Django sends: http://<domain>/api/users/verify-email/<token>
-          That's a backend URL — the email link goes directly to Django.
-          Django processes it and returns a JSON response.
-
-          BUT if you want a frontend page to handle the token instead,
-          set the verification link in Django to point to your frontend:
-            verification_link = f"https://your-frontend.com/verify-email/{raw_token}"
-          Then this route catches it and calls the Django API from the browser.
-        */}
-        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
-
-        {/* Forgot password — 3 steps in one page */}
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* ── User routes (protected) ── */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute requiredRole="user">
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/attendance"
-          element={
-            <ProtectedRoute requiredRole="user">
-              <AttendancePage />
-            </ProtectedRoute>
-          }
-        />
+        {/* ── User routes ── */}
+        <Route path="/dashboard" element={<ProtectedRoute requiredRole="user"><Dashboard /></ProtectedRoute>} />
+        <Route path="/attendance" element={<ProtectedRoute requiredRole="user"><AttendancePage /></ProtectedRoute>} />
+        <Route path="/check-in" element={<CheckInPage />} />
+        <Route path="/profile" element={<ProtectedRoute requiredRole="user"><ProfilePage /></ProtectedRoute>} />
 
-        {/* ── Admin routes (protected) ── */}
-        <Route
-          path="/admin/dashboard"
-          element={
-            <ProtectedRoute requiredRole="admin">
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
+        {/* ── Admin routes ── */}
+        <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin/events" element={<ProtectedRoute requiredRole="admin"><AdminEvents /></ProtectedRoute>} />
+        <Route path="/admin/events/:eventId" element={<ProtectedRoute requiredRole="admin"><AdminEventDetail /></ProtectedRoute>} />
+        <Route path="/admin/attendance" element={<ProtectedRoute requiredRole="admin"><AdminEventSection section="attendance" /></ProtectedRoute>} />
+        <Route path="/admin/analytics" element={<ProtectedRoute requiredRole="admin"><AdminEventSection section="analytics" /></ProtectedRoute>} />
+        <Route path="/admin/fraud" element={<ProtectedRoute requiredRole="admin"><AdminEventSection section="fraud" /></ProtectedRoute>} />
+        <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
 
-        {/* Catch-all */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

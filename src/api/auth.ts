@@ -21,15 +21,33 @@ export interface AuthUser {
   email: string;
   first_name: string;
   last_name: string;
+  phone?: string;
   role?: "user" | "admin";
+  is_staff?: boolean;
+  is_superuser?: boolean;
 }
+
+export interface UserProfile extends AuthUser {}
 
 export interface AuthResponse {
   token?: string;
   access?: string;
   refresh?: string;
+  status?: string;
   message?: string;
   user?: AuthUser;
+  data?: {
+    user?: AuthUser;
+    access?: string;
+    refresh?: string;
+  };
+  username?: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  role?: "user" | "admin";
+  is_staff?: boolean;
+  is_superuser?: boolean;
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
@@ -51,13 +69,92 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return (data ?? {}) as T;
 }
 
-function authHeaders(): Record<string, string> {
+export function authHeaders(): Record<string, string> {
   const token = localStorage.getItem("token");
 
   return {
     "Content-Type": "application/json",
-    ...(token ? { Authorization: `Token ${token}` } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
+}
+
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const [, payload] = token.split(".");
+    if (!payload) {
+      return null;
+    }
+
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), "=");
+    const decoded = atob(padded);
+
+    return JSON.parse(decoded) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+function inferRoleFromClaims(claims: Record<string, unknown> | null): "user" | "admin" {
+  if (!claims) {
+    return "user";
+  }
+
+  const role = claims.role;
+  if (role === "admin" || role === "superuser") {
+    return "admin";
+  }
+
+  if (claims.is_staff === true || claims.is_superuser === true) {
+    return "admin";
+  }
+
+  return "user";
+}
+
+function normalizeUser(data: AuthResponse): AuthUser | null {
+  const directUser = data.user;
+  const nestedUser = data.data?.user;
+  const candidate = directUser || nestedUser;
+  const token = getAuthToken(data);
+  const claims = decodeJwtPayload(token);
+
+  if (candidate) {
+    return {
+      ...candidate,
+      role:
+        candidate.role ||
+        (candidate.is_superuser || candidate.is_staff ? "admin" : inferRoleFromClaims(claims)),
+    };
+  }
+
+  return {
+    id: typeof claims?.user_id === "number" ? claims.user_id : 0,
+    username:
+      data.username ||
+      (typeof claims?.username === "string" ? claims.username : "") ||
+      data.email ||
+      "",
+    email:
+      data.email ||
+      (typeof claims?.email === "string" ? claims.email : "") ||
+      "",
+    first_name:
+      data.first_name ||
+      (typeof claims?.first_name === "string" ? claims.first_name : "") ||
+      "",
+    last_name:
+      data.last_name ||
+      (typeof claims?.last_name === "string" ? claims.last_name : "") ||
+      "",
+    role: data.role || (data.is_superuser || data.is_staff ? "admin" : inferRoleFromClaims(claims)),
+    is_staff: data.is_staff ?? (claims?.is_staff === true),
+    is_superuser: data.is_superuser ?? (claims?.is_superuser === true),
+  };
+}
+
+export function getAuthToken(data: AuthResponse): string {
+  return data.access || data.token || data.data?.access || "";
 }
 
 export async function register(payload: RegisterPayload): Promise<AuthResponse> {
@@ -95,6 +192,7 @@ export async function logout(): Promise<void> {
   });
 
   localStorage.removeItem("token");
+  localStorage.removeItem("refresh");
   localStorage.removeItem("user");
 }
 
@@ -111,10 +209,29 @@ export async function resendVerificationEmail(email: string): Promise<AuthRespon
 export async function verifyEmail(token: string): Promise<AuthResponse> {
   const res = await fetch(`${BASE_URL}/users/verify-email/${token}/`, {
     method: "GET",
-    headers: { "Content-Type": "application/json" },
+    headers: { Accept: "application/json, text/html" },
   });
 
-  return handleResponse<AuthResponse>(res);
+  const contentType = res.headers.get("content-type") || "";
+
+  if (contentType.includes("application/json")) {
+    return handleResponse<AuthResponse>(res);
+  }
+
+  const text = await res.text();
+  const message = text
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!res.ok) {
+    throw new Error(message || "Verification failed.");
+  }
+
+  return {
+    message,
+    status: message.toLowerCase().includes("already") ? "already_verified" : "success",
+  };
 }
 
 export async function forgotPassword(identifier: string): Promise<AuthResponse> {
@@ -175,12 +292,20 @@ export async function changePassword(
   return handleResponse<AuthResponse>(res);
 }
 
-export async function listUsers(): Promise<AuthResponse> {
-  const res = await fetch(`${BASE_URL}/users/list/`, {
+export async function listUsers(
+  search?: string,
+  role?: string
+): Promise<{ count: number; next: string | null; previous: string | null; results: UserProfile[] }> {
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  if (role) params.set("role", role);
+  const query = params.toString();
+
+  const res = await fetch(`${BASE_URL}/users/list/${query ? `?${query}` : ""}`, {
     headers: authHeaders(),
   });
 
-  return handleResponse<AuthResponse>(res);
+  return handleResponse<{ count: number; next: string | null; previous: string | null; results: UserProfile[] }>(res);
 }
 
 export async function getUserDetail(id: number): Promise<AuthResponse> {
@@ -204,6 +329,23 @@ export async function updateUser(
   return handleResponse<AuthResponse>(res);
 }
 
+export async function updateMyProfile(payload: Partial<RegisterPayload>): Promise<AuthResponse> {
+  const currentUser = getStoredUser();
+
+  if (!currentUser?.id) {
+    throw new Error("No signed-in user found.");
+  }
+
+  const response = await updateUser(currentUser.id, payload);
+  const mergedUser = {
+    ...currentUser,
+    ...payload,
+    phone: payload.phone ?? currentUser.phone,
+  };
+  localStorage.setItem("user", JSON.stringify(mergedUser));
+  return response;
+}
+
 export async function deleteUser(id: number): Promise<void> {
   const res = await fetch(`${BASE_URL}/users/${id}/delete/`, {
     method: "DELETE",
@@ -220,6 +362,128 @@ export function getStoredToken(): string | null {
   return localStorage.getItem("token");
 }
 
+function buildUserFromClaims(
+  claims: Record<string, unknown>,
+  existingUser?: Partial<AuthUser> | null
+): AuthUser {
+  const existingIsAdmin =
+    existingUser?.role === "admin" || existingUser?.is_staff === true || existingUser?.is_superuser === true;
+
+  return {
+    id:
+      existingUser?.id ||
+      (typeof claims.user_id === "number" ? claims.user_id : 0),
+    username:
+      existingUser?.username ||
+      (typeof claims.username === "string" ? claims.username : "") ||
+      (typeof claims.email === "string" ? claims.email : ""),
+    email:
+      existingUser?.email ||
+      (typeof claims.email === "string" ? claims.email : ""),
+    first_name:
+      existingUser?.first_name ||
+      (typeof claims.first_name === "string" ? claims.first_name : ""),
+    last_name:
+      existingUser?.last_name ||
+      (typeof claims.last_name === "string" ? claims.last_name : ""),
+    phone: existingUser?.phone,
+    role: existingIsAdmin ? "admin" : inferRoleFromClaims(claims),
+    is_staff: existingUser?.is_staff ?? (claims.is_staff === true),
+    is_superuser: existingUser?.is_superuser ?? (claims.is_superuser === true),
+  };
+}
+
+export function getStoredUser(): AuthUser | null {
+  const rawUser = localStorage.getItem("user");
+  let parsedUser: AuthUser | null = null;
+
+  if (rawUser) {
+    try {
+      parsedUser = JSON.parse(rawUser) as AuthUser;
+    } catch {
+      localStorage.removeItem("user");
+    }
+  }
+
+  const token = getStoredToken();
+  const claims = token ? decodeJwtPayload(token) : null;
+
+  if (!claims) {
+    return parsedUser;
+  }
+
+  const resolvedUser = buildUserFromClaims(claims, parsedUser);
+
+  localStorage.setItem("user", JSON.stringify(resolvedUser));
+  return resolvedUser;
+}
+
+export function getUserDisplayName(user: AuthUser | null): string {
+  if (!user) {
+    return "";
+  }
+
+  if (user.username) {
+    return user.username;
+  }
+
+  const fullName = [user.first_name, user.last_name].filter(Boolean).join(" ").trim();
+  if (fullName) {
+    return fullName;
+  }
+
+  if (user.email) {
+    return user.email;
+  }
+
+  return "";
+}
+
 export function isAuthenticated(): boolean {
   return !!getStoredToken();
+}
+
+export function persistAuthSession(data: AuthResponse) {
+  const token = getAuthToken(data);
+  const refresh = data.refresh || data.data?.refresh || "";
+  const user = normalizeUser(data);
+
+  if (token) {
+    localStorage.setItem("token", token);
+  }
+
+  if (refresh) {
+    localStorage.setItem("refresh", refresh);
+  }
+
+  if (user) {
+    localStorage.setItem("user", JSON.stringify(user));
+  } else {
+    localStorage.removeItem("user");
+  }
+
+  return { token, refresh, user };
+}
+
+export function saveUserIdentityFallback(username: string) {
+  const currentUser = getStoredUser();
+
+  if (currentUser?.username) {
+    return currentUser;
+  }
+
+  const fallbackUser: AuthUser = {
+    id: currentUser?.id || 0,
+    username,
+    email: currentUser?.email || "",
+    first_name: currentUser?.first_name || "",
+    last_name: currentUser?.last_name || "",
+    phone: currentUser?.phone,
+    role: currentUser?.role || "user",
+    is_staff: currentUser?.is_staff,
+    is_superuser: currentUser?.is_superuser,
+  };
+
+  localStorage.setItem("user", JSON.stringify(fallbackUser));
+  return fallbackUser;
 }

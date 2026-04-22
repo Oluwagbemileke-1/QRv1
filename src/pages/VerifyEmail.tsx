@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
-import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { verifyEmail, resendVerificationEmail } from "../api/auth";
 import "./Auth.css";
 
 type State = "pending" | "loading" | "success" | "already" | "expired" | "used" | "invalid";
 
 export default function VerifyEmail() {
-  const navigate = useNavigate();
   const { token } = useParams<{ token: string }>();
   const [searchParams] = useSearchParams();
   const initialEmail = searchParams.get("email") || "";
@@ -15,6 +14,7 @@ export default function VerifyEmail() {
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMsg, setResendMsg] = useState("");
   const [resendError, setResendError] = useState("");
+  const [serverMessage, setServerMessage] = useState("");
 
   useEffect(() => {
     if (initialEmail) {
@@ -29,16 +29,24 @@ export default function VerifyEmail() {
     }
 
     verifyEmail(token)
-      .then((data: { message?: string }) => {
+      .then((data: { message?: string; status?: string }) => {
         const msg = data.message?.toLowerCase() || "";
-        if (msg.includes("already")) {
+        const status = data.status?.toLowerCase() || "";
+        setServerMessage(data.message || "Email verified successfully.");
+
+        if (status.includes("already") || msg.includes("already")) {
           setState("already");
-        } else {
+        } else if (status.includes("success") || msg.includes("verified")) {
           setState("success");
+        } else if (msg.includes("expired")) {
+          setState("expired");
+        } else {
+          setState("invalid");
         }
       })
       .catch((err: Error) => {
         const msg = err.message.toLowerCase();
+        setServerMessage(err.message);
         if (msg.includes("expired")) {
           setState("expired");
         } else if (msg.includes("already used")) {
@@ -48,18 +56,6 @@ export default function VerifyEmail() {
         }
       });
   }, [token]);
-
-  useEffect(() => {
-    if (state !== "success" && state !== "already") {
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      navigate("/login");
-    }, 3000);
-
-    return () => window.clearTimeout(timer);
-  }, [navigate, state]);
 
   const handleResend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,7 +155,7 @@ export default function VerifyEmail() {
               </svg>
             </div>
             <h2 className="verify-title">Email verified!</h2>
-            <p className="verify-sub">Your account is now active. You can sign in. Redirecting you to login...</p>
+            <p className="verify-sub">{serverMessage || "Your account is now active. You can sign in."}</p>
             <Link
               to="/login"
               className="auth-btn"
@@ -179,7 +175,7 @@ export default function VerifyEmail() {
               </svg>
             </div>
             <h2 className="verify-title">Already verified</h2>
-            <p className="verify-sub">This email is already verified. Redirecting you to login...</p>
+            <p className="verify-sub">{serverMessage || "This email is already verified. You can log in now."}</p>
             <Link
               to="/login"
               className="auth-btn"
@@ -201,12 +197,12 @@ export default function VerifyEmail() {
             <h2 className="verify-title">
               {state === "expired" ? "Link expired" : state === "used" ? "Link already used" : "Invalid link"}
             </h2>
-            <p className="verify-sub">
-              {state === "expired"
+            <p className="verify-sub">{serverMessage ||
+              (state === "expired"
                 ? "This verification link has expired. Request a new one below."
                 : state === "used"
                   ? "This link has already been used. If you're not verified yet, request a new link."
-                  : "This verification link is invalid. Request a new one below."}
+                  : "This verification link is invalid. Request a new one below.")}
             </p>
 
             {resendMsg ? (
@@ -245,6 +241,14 @@ export default function VerifyEmail() {
                 </button>
               </form>
             )}
+
+            <Link
+              to="/login"
+              className="auth-btn"
+              style={{ display: "block", textAlign: "center", textDecoration: "none", marginTop: "1rem" }}
+            >
+              Back to login
+            </Link>
           </div>
         )}
 

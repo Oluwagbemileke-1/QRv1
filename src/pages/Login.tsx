@@ -1,13 +1,19 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { login } from "../api/auth";
+import { useMemo, useState } from "react";
+import { useNavigate, Link, useLocation } from "react-router-dom";
+import { login, persistAuthSession, saveUserIdentityFallback } from "../api/auth";
+import { getAllEvents } from "../api/events";
 import "./Auth.css";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [form, setForm] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const nextPath = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get("next") || "";
+  }, [location.search]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -20,10 +26,35 @@ export default function Login() {
     setError("");
     try {
       const data = await login(form);
-      const token = data.token || data.access || "";
-      localStorage.setItem("token", token);
-      if (data.user) localStorage.setItem("user", JSON.stringify(data.user));
-      navigate("/dashboard");
+      const session = persistAuthSession(data);
+      const resolvedUser = session.user || saveUserIdentityFallback(form.username);
+
+      if (!session.token) {
+        throw new Error("Login succeeded but no access token was returned.");
+      }
+
+      if (nextPath) {
+        navigate(nextPath);
+        return;
+      }
+
+      let isAdmin = resolvedUser?.role === "admin";
+
+      if (!isAdmin) {
+        try {
+          await getAllEvents({ page: 1 });
+          isAdmin = true;
+
+          if (resolvedUser) {
+            const adminUser = { ...resolvedUser, role: "admin" as const };
+            localStorage.setItem("user", JSON.stringify(adminUser));
+          }
+        } catch {
+          isAdmin = false;
+        }
+      }
+
+      navigate(nextPath || (isAdmin ? "/admin/dashboard" : "/dashboard"));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login failed.");
     } finally {
@@ -37,7 +68,9 @@ export default function Login() {
         <div className="auth-brand">
           <span className="auth-logo">QR</span>
           <h1 className="auth-title">Welcome back</h1>
-          <p className="auth-subtitle">Sign in to your account</p>
+          <p className="auth-subtitle">
+            {nextPath ? "Sign in to continue your check-in" : "Sign in to your account"}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">

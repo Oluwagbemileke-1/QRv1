@@ -1,3 +1,5 @@
+import { authHeaders } from "./auth";
+
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
 export type AttendanceStatus = "attended" | "missed";
@@ -17,14 +19,6 @@ export interface AttendanceSummary {
   attended: number;
   missed: number;
   records: AttendanceRecord[];
-}
-
-function authHeaders(): Record<string, string> {
-  const token = localStorage.getItem("token");
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Token ${token}` } : {}),
-  };
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
