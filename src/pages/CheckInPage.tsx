@@ -103,16 +103,6 @@ export default function CheckInPage() {
             </p>
           </div>
 
-          <div className="user-note" style={{ marginBottom: "1rem", wordBreak: "break-word" }}>
-            <strong>Debug:</strong> path={location.pathname}
-            <br />
-            search={location.search || "(empty)"}
-            <br />
-            payload={payload || "(missing)"}
-            <br />
-            event_code={linkedCode || "(missing)"}
-          </div>
-
           {!user && (
             <div className="user-alert user-alert--error">
               Sign in to your registered account first, then come back here to finish check-in.

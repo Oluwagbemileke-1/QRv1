@@ -69,6 +69,97 @@ async function handleResponse<T>(res: Response): Promise<T> {
   return (data ?? {}) as T;
 }
 
+let refreshPromise: Promise<string | null> | null = null;
+
+async function requestTokenRefresh(): Promise<string | null> {
+  const refresh = localStorage.getItem("refresh");
+
+  if (!refresh) {
+    return null;
+  }
+
+  const endpoints = [`${BASE_URL}/token/refresh/`, `${BASE_URL}/users/token/refresh/`];
+
+  for (const endpoint of endpoints) {
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh }),
+      });
+
+      if (!res.ok) {
+        continue;
+      }
+
+      const data = await res.json().catch(() => null) as { access?: string } | null;
+      const access = data?.access || "";
+
+      if (access) {
+        localStorage.setItem("token", access);
+        return access;
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  localStorage.removeItem("token");
+  localStorage.removeItem("refresh");
+  localStorage.removeItem("user");
+  return null;
+}
+
+export async function refreshAccessToken(): Promise<string | null> {
+  if (!refreshPromise) {
+    refreshPromise = requestTokenRefresh().finally(() => {
+      refreshPromise = null;
+    });
+  }
+
+  return refreshPromise;
+}
+
+export async function authorizedFetch(input: string, init: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(init.headers || {});
+  const token = localStorage.getItem("token");
+
+  if (!headers.has("Content-Type") && init.body) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  let response = await fetch(input, {
+    ...init,
+    headers,
+  });
+
+  if (response.status !== 401) {
+    return response;
+  }
+
+  const freshToken = await refreshAccessToken();
+  if (!freshToken) {
+    return response;
+  }
+
+  const retryHeaders = new Headers(init.headers || {});
+  if (!retryHeaders.has("Content-Type") && init.body) {
+    retryHeaders.set("Content-Type", "application/json");
+  }
+  retryHeaders.set("Authorization", `Bearer ${freshToken}`);
+
+  response = await fetch(input, {
+    ...init,
+    headers: retryHeaders,
+  });
+
+  return response;
+}
+
 export function authHeaders(): Record<string, string> {
   const token = localStorage.getItem("token");
 
@@ -186,9 +277,8 @@ export async function login(payload: LoginPayload): Promise<AuthResponse> {
 }
 
 export async function logout(): Promise<void> {
-  await fetch(`${BASE_URL}/users/logout/`, {
+  await authorizedFetch(`${BASE_URL}/users/logout/`, {
     method: "POST",
-    headers: authHeaders(),
   });
 
   localStorage.removeItem("token");
@@ -283,9 +373,8 @@ export async function changePassword(
   new_password: string,
   confirm_password: string
 ): Promise<AuthResponse> {
-  const res = await fetch(`${BASE_URL}/users/change-password/`, {
+  const res = await authorizedFetch(`${BASE_URL}/users/change-password/`, {
     method: "PUT",
-    headers: authHeaders(),
     body: JSON.stringify({ old_password, new_password, confirm_password }),
   });
 
@@ -301,17 +390,13 @@ export async function listUsers(
   if (role) params.set("role", role);
   const query = params.toString();
 
-  const res = await fetch(`${BASE_URL}/users/list/${query ? `?${query}` : ""}`, {
-    headers: authHeaders(),
-  });
+  const res = await authorizedFetch(`${BASE_URL}/users/list/${query ? `?${query}` : ""}`);
 
   return handleResponse<{ count: number; next: string | null; previous: string | null; results: UserProfile[] }>(res);
 }
 
 export async function getUserDetail(id: number): Promise<AuthResponse> {
-  const res = await fetch(`${BASE_URL}/users/${id}/`, {
-    headers: authHeaders(),
-  });
+  const res = await authorizedFetch(`${BASE_URL}/users/${id}/`);
 
   return handleResponse<AuthResponse>(res);
 }
@@ -320,9 +405,8 @@ export async function updateUser(
   id: number,
   payload: Partial<RegisterPayload>
 ): Promise<AuthResponse> {
-  const res = await fetch(`${BASE_URL}/users/${id}/update/`, {
+  const res = await authorizedFetch(`${BASE_URL}/users/${id}/update/`, {
     method: "PUT",
-    headers: authHeaders(),
     body: JSON.stringify(payload),
   });
 
@@ -347,9 +431,8 @@ export async function updateMyProfile(payload: Partial<RegisterPayload>): Promis
 }
 
 export async function deleteUser(id: number): Promise<void> {
-  const res = await fetch(`${BASE_URL}/users/${id}/delete/`, {
+  const res = await authorizedFetch(`${BASE_URL}/users/${id}/delete/`, {
     method: "DELETE",
-    headers: authHeaders(),
   });
 
   if (!res.ok) {

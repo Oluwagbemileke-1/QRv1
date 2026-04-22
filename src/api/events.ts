@@ -1,4 +1,4 @@
-import { authHeaders } from "./auth";
+import { authorizedFetch } from "./auth";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "https://qr-attendance-api-smj1.onrender.com/api";
  
@@ -90,9 +90,8 @@ async function handleResponse<T>(res: Response): Promise<T> {
  
 /** POST api/events/create/ — admin only */
 export async function createEvent(payload: CreateEventPayload): Promise<{ message: string; data: Event }> {
-  const res = await fetch(`${BASE_URL}/events/create/`, {
+  const res = await authorizedFetch(`${BASE_URL}/events/create/`, {
     method: "POST",
-    headers: authHeaders(),
     body: JSON.stringify(payload),
   });
   return handleResponse(res);
@@ -110,17 +109,13 @@ export async function getAllEvents(params?: {
   if (params?.date) p.set("date", params.date);
   if (params?.status) p.set("status", params.status);
   if (params?.page) p.set("page", String(params.page));
-  const res = await fetch(`${BASE_URL}/events/allevents/?${p}`, {
-    headers: authHeaders(),
-  });
+  const res = await authorizedFetch(`${BASE_URL}/events/allevents/?${p}`);
   return handleResponse(res);
 }
  
 /** GET api/events/<uuid>/ */
 export async function getEventDetail(eventId: string): Promise<{ success: string; data: Event }> {
-  const res = await fetch(`${BASE_URL}/events/${eventId}/`, {
-    headers: authHeaders(),
-  });
+  const res = await authorizedFetch(`${BASE_URL}/events/${eventId}/`);
   return handleResponse(res);
 }
  
@@ -129,9 +124,8 @@ export async function updateEvent(
   eventId: string,
   payload: Partial<CreateEventPayload>
 ): Promise<{ message: string; data: Event }> {
-  const res = await fetch(`${BASE_URL}/events/${eventId}/update/`, {
+  const res = await authorizedFetch(`${BASE_URL}/events/${eventId}/update/`, {
     method: "PUT",
-    headers: authHeaders(),
     body: JSON.stringify(payload),
   });
   return handleResponse(res);
@@ -139,9 +133,8 @@ export async function updateEvent(
  
 /** DELETE api/events/<uuid>/delete/ — soft delete */
 export async function deleteEvent(eventId: string): Promise<{ message: string }> {
-  const res = await fetch(`${BASE_URL}/events/${eventId}/delete/`, {
+  const res = await authorizedFetch(`${BASE_URL}/events/${eventId}/delete/`, {
     method: "DELETE",
-    headers: authHeaders(),
   });
   return handleResponse(res);
 }
@@ -165,9 +158,8 @@ export async function generateEventQr(eventId: string): Promise<{
     expiresAt: string;
   };
 }> {
-  const res = await fetch(`${BASE_URL}/events/${eventId}/generate-qr/`, {
+  const res = await authorizedFetch(`${BASE_URL}/events/${eventId}/generate-qr/`, {
     method: "POST",
-    headers: authHeaders(),
   });
   return handleResponse(res);
 }
@@ -180,9 +172,7 @@ export async function getEventAttendees(
   const p = new URLSearchParams();
   if (params?.search) p.set("search", params.search);
   if (params?.page) p.set("page", String(params.page));
-  const res = await fetch(`${BASE_URL}/events/${eventId}/eventattendees/?${p}`, {
-    headers: authHeaders(),
-  });
+  const res = await authorizedFetch(`${BASE_URL}/events/${eventId}/eventattendees/?${p}`);
   return handleResponse(res);
 }
  
@@ -191,9 +181,8 @@ export async function previewAssign(
   eventId: string,
   user_ids: number[]
 ): Promise<AssignPreview> {
-  const res = await fetch(`${BASE_URL}/events/${eventId}/preview-assign/`, {
+  const res = await authorizedFetch(`${BASE_URL}/events/${eventId}/preview-assign/`, {
     method: "POST",
-    headers: authHeaders(),
     body: JSON.stringify({ user_ids }),
   });
   return handleResponse(res);
@@ -214,9 +203,8 @@ export async function assignUsers(
   summary?: AssignPreview["summary"];
   preview?: AssignPreview["summary"];
 }> {
-  const res = await fetch(`${BASE_URL}/events/${eventId}/assign/`, {
+  const res = await authorizedFetch(`${BASE_URL}/events/${eventId}/assign/`, {
     method: "POST",
-    headers: authHeaders(),
     body: JSON.stringify({ user_ids, confirm }),
   });
   return handleResponse(res);
@@ -229,9 +217,7 @@ export async function getMyEvents(params?: {
   const p = new URLSearchParams();
   if (params?.search) p.set("search", params.search);
   if (params?.date) p.set("date", params.date);
-  const res = await fetch(`${BASE_URL}/events/my-events/${p.toString() ? `?${p}` : ""}`, {
-    headers: authHeaders(),
-  });
+  const res = await authorizedFetch(`${BASE_URL}/events/my-events/${p.toString() ? `?${p}` : ""}`);
   return handleResponse(res);
 }
  

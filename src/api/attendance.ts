@@ -1,4 +1,4 @@
-import { authHeaders } from "./auth";
+import { authorizedFetch } from "./auth";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
@@ -38,9 +38,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
  * Returns all attendance records for the logged-in user.
  */
 export async function getMyAttendance(): Promise<AttendanceSummary> {
-  const res = await fetch(`${BASE_URL}/attendance/my-attendance/`, {
-    headers: authHeaders(),
-  });
+  const res = await authorizedFetch(`${BASE_URL}/attendance/my-attendance/`);
   return handleResponse<AttendanceSummary>(res);
 }
 
@@ -49,8 +47,6 @@ export async function getMyAttendance(): Promise<AttendanceSummary> {
  * Returns attendance record for a specific event.
  */
 export async function getMyEventAttendance(eventId: string): Promise<AttendanceRecord> {
-  const res = await fetch(`${BASE_URL}/attendance/${eventId}/my-event-attendance/`, {
-    headers: authHeaders(),
-  });
+  const res = await authorizedFetch(`${BASE_URL}/attendance/${eventId}/my-event-attendance/`);
   return handleResponse<AttendanceRecord>(res);
 }
