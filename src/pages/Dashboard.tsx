@@ -81,12 +81,12 @@ export default function Dashboard() {
         <section className="dash-hero">
           <h1 className="dash-welcome">Your event space</h1>
           <p className="dash-caption">
-            Track invited events, see what you attended or missed, and jump into check-in when your QR-linked page is ready.
+            Track invited events, see what you attended or missed, and use your event QR when it is time to check in.
           </p>
           <div className="dash-hero-actions">
             <Link to="/attendance" className="dash-hero-btn dash-hero-btn--primary">Open attendance</Link>
             <Link to="/profile" className="dash-hero-btn dash-hero-btn--ghost">View profile</Link>
-            <Link to="/check-in" className="dash-hero-btn dash-hero-btn--ghost">Check in</Link>
+            <span className="dash-hero-note">Check-in only works from a scanned event QR.</span>
           </div>
         </section>
 
@@ -115,13 +115,13 @@ export default function Dashboard() {
           <article className="dash-panel">
             <div className="dash-panel-head">
               <h2>Ready For You</h2>
-              <p>Active and upcoming events you’ve been invited to.</p>
+              <p>Active and upcoming events you've been invited to. Scan the QR shared for your event to begin check-in.</p>
             </div>
             <div className="dash-panel-body">
               {loading ? <p className="dash-empty">Loading events...</p> : (
                 <>
                   {events.active.map((event) => (
-                    <EventRow key={`active-${event.id}`} event={event} actionLabel="Check in" actionTo="/check-in" />
+                    <EventRow key={`active-${event.id}`} event={event} actionLabel="Scan your event QR" />
                   ))}
                   {events.upcoming.map((event) => (
                     <EventRow key={`upcoming-${event.id}`} event={event} actionLabel="Upcoming" />

@@ -17,6 +17,8 @@ export default function CheckInPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [confirmedCode, setConfirmedCode] = useState("");
+  const hasPayload = Boolean(payload);
+  const canSubmit = Boolean(user && hasPayload && !loading);
 
   const nextLoginUrl = `/login?next=${encodeURIComponent(`${location.pathname}${location.search}`)}`;
   const nextRegisterUrl = `/register?next=${encodeURIComponent(`${location.pathname}${location.search}`)}`;
@@ -27,7 +29,7 @@ export default function CheckInPage() {
     setSuccess("");
 
     if (!payload) {
-      setError("This QR link is missing the scan payload.");
+      setError("Please scan the event QR again to continue check-in.");
       return;
     }
 
@@ -109,6 +111,12 @@ export default function CheckInPage() {
             </div>
           )}
 
+          {!hasPayload && (
+            <div className="user-alert user-alert--error">
+              This check-in link is incomplete. Please go back and scan the event QR again to open the full check-in page.
+            </div>
+          )}
+
           {linkedCode && (
             <div className="user-note">
               This QR is linked to event code <strong>{linkedCode}</strong>. Enter that code below to be marked present.
@@ -131,6 +139,7 @@ export default function CheckInPage() {
                 onChange={(e) => setEventCode(e.target.value.toUpperCase())}
                 placeholder="Enter the event code"
                 autoCapitalize="characters"
+                disabled={!hasPayload}
               />
             </label>
 
@@ -140,17 +149,18 @@ export default function CheckInPage() {
                 value={locationNote}
                 onChange={(e) => setLocationNote(e.target.value)}
                 placeholder="Optional room, building, or location note"
+                disabled={!hasPayload}
               />
             </label>
 
             {!payload && (
               <div className="user-note">
-                This QR link is incomplete. The backend should send users here with a valid <code>payload</code> query value.
+                Scan the event QR from your invite or event screen. A normal app link to check-in will not contain the required scan details.
               </div>
             )}
 
             <div className="user-actions">
-              <button className="user-btn user-btn--primary" type="submit" disabled={loading || !user}>
+              <button className="user-btn user-btn--primary" type="submit" disabled={!canSubmit}>
                 {loading ? "Checking in..." : "Mark attendance"}
               </button>
               {user ? (
