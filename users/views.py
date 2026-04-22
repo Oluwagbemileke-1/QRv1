@@ -31,6 +31,39 @@ def is_verified_active_user(user):
     return bool(user and user.is_active and user.is_verified)
 
 @swagger_auto_schema(
+    method='get',
+    tags=["USERS"],
+    operation_summary="Auth Debug",
+    operation_description="Protected debug endpoint to confirm backend token/user resolution."
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def auth_debug(request):
+    auth = request.auth
+    token_payload = {}
+
+    if hasattr(auth, 'payload') and isinstance(auth.payload, dict):
+        token_payload = {
+            "token_type": auth.payload.get("token_type"),
+            "exp": auth.payload.get("exp"),
+            "iat": auth.payload.get("iat"),
+            "jti": auth.payload.get("jti"),
+            "user_id": auth.payload.get("user_id"),
+        }
+
+    return Response({
+        "authenticated": True,
+        "user": {
+            "id": request.user.id,
+            "username": request.user.username,
+            "is_active": request.user.is_active,
+            "is_verified": getattr(request.user, "is_verified", False),
+            "is_superuser": request.user.is_superuser,
+        },
+        "token": token_payload,
+    }, status=status.HTTP_200_OK)
+
+@swagger_auto_schema(
     method='post',
     tags=["👤 USERS"],
     operation_summary="Register",

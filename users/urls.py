@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+     path('auth-debug/', views.auth_debug, name='auth_debug'), # get
      path('register/', views.register, name='register'), # post
      path('resendemail/', views.resend_verification, name='resend-verification'), # post
      path('verify-email/<str:token>/', views.verify_email, name='verify-email'),
