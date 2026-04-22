@@ -441,6 +441,28 @@
   margin-top: 1rem;
 }
 .adm-qr-img { width: min(72vw, 560px); height: min(72vw, 560px); object-fit: contain; }
+.adm-qr-link-block {
+  width: min(100%, 560px);
+  text-align: left;
+  background: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+}
+.adm-qr-link {
+  display: block;
+  margin-top: 0.45rem;
+  color: #1d4ed8;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  word-break: break-all;
+}
+.adm-qr-link-note {
+  margin-top: 0.45rem;
+  color: #475569;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
 .adm-qr-expiry { font-size: 12px; color: #374151; }
 .adm-qr-countdown {
   font-size: 13px;

@@ -31,6 +31,23 @@ function TabBtn({ id, active, onClick, children }: { id: Tab; active: Tab; onCli
   );
 }
 
+function buildCheckInUrl(payload: string, eventCode?: string, explicitUrl?: string | null): string {
+  if (explicitUrl) {
+    return explicitUrl;
+  }
+
+  if (!payload || typeof window === "undefined") {
+    return "";
+  }
+
+  const params = new URLSearchParams({ payload });
+  if (eventCode) {
+    params.set("event_code", eventCode);
+  }
+
+  return `${window.location.origin}/check-in?${params.toString()}`;
+}
+
 export default function AdminEventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
@@ -329,20 +346,24 @@ export default function AdminEventDetail() {
       let generatedAt = "";
       let checkInUrl = "";
       let eventCode = "";
+      let payload = "";
 
       try {
         const res = await generateEventQr(eventId);
         imageUrl = res.data?.imageUrl || "";
         expiresAt = res.data?.expiresAt || "";
         generatedAt = res.data?.generatedAt || "";
-        checkInUrl = res.check_in_url || "";
+        payload = res.payload || "";
         eventCode = res.event_code || event.event_code;
+        checkInUrl = buildCheckInUrl(payload, eventCode, res.check_in_url);
       } catch {
         const fallback = await generateQr(eventId, event.event_code);
         imageUrl = fallback.imageUrl;
         expiresAt = fallback.expiresAt;
         generatedAt = fallback.generatedAt;
+        payload = fallback.payload || "";
         eventCode = event.event_code;
+        checkInUrl = buildCheckInUrl(payload, eventCode);
       }
 
       if (!imageUrl || !expiresAt) {
@@ -628,6 +649,23 @@ export default function AdminEventDetail() {
               <div className="adm-qr-stage">
                 <div className="adm-qr-box">
                   <img src={qrData.imageUrl} alt="QR Code" className="adm-qr-img" />
+                  <div className="adm-qr-link-block">
+                    <span className="adm-stat-label">Check-in URL</span>
+                    {qrData.checkInUrl ? (
+                      <a
+                        href={qrData.checkInUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="adm-qr-link"
+                      >
+                        {qrData.checkInUrl}
+                      </a>
+                    ) : (
+                      <p className="adm-qr-link-note">
+                        This QR image is available, but the backend did not return a shareable check-in URL for this generation.
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div style={{ marginTop: "1rem" }}>
                   <span className="adm-stat-label">Expires in</span>
