@@ -12,7 +12,23 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const nextPath = useMemo(() => {
     const params = new URLSearchParams(location.search);
-    return params.get("next") || sessionStorage.getItem("pendingCheckInPath") || "";
+    const explicitNext = params.get("next") || "";
+    if (explicitNext) {
+      return explicitNext;
+    }
+
+    const payload = params.get("payload") || "";
+    const eventCode = params.get("event_code") || params.get("code") || "";
+
+    if (payload) {
+      const checkInParams = new URLSearchParams({ payload });
+      if (eventCode) {
+        checkInParams.set("event_code", eventCode);
+      }
+      return `/check-in?${checkInParams.toString()}`;
+    }
+
+    return sessionStorage.getItem("pendingCheckInPath") || "";
   }, [location.search]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

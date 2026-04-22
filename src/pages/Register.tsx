@@ -20,7 +20,26 @@ export default function Register() {
   const [form, setForm] = useState(INITIAL);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const nextPath = new URLSearchParams(location.search).get("next") || "";
+  const nextPath = (() => {
+    const params = new URLSearchParams(location.search);
+    const explicitNext = params.get("next") || "";
+    if (explicitNext) {
+      return explicitNext;
+    }
+
+    const payload = params.get("payload") || "";
+    const eventCode = params.get("event_code") || params.get("code") || "";
+
+    if (payload) {
+      const checkInParams = new URLSearchParams({ payload });
+      if (eventCode) {
+        checkInParams.set("event_code", eventCode);
+      }
+      return `/check-in?${checkInParams.toString()}`;
+    }
+
+    return "";
+  })();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
