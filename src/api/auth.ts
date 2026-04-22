@@ -437,7 +437,7 @@ export function getUserDisplayName(user: AuthUser | null): string {
   }
 
   return "";
-}
+ }
 
 export function isAuthenticated(): boolean {
   return !!getStoredToken();
