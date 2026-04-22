@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { getStoredUser, getUserDisplayName } from "../api/auth";
 import { submitScan } from "../api/dotnet";
@@ -19,9 +19,18 @@ export default function CheckInPage() {
   const [confirmedCode, setConfirmedCode] = useState("");
   const hasPayload = Boolean(payload);
   const canSubmit = Boolean(user && hasPayload && !loading);
+  const currentCheckInPath = `${location.pathname}${location.search}`;
 
   const nextLoginUrl = `/login?next=${encodeURIComponent(`${location.pathname}${location.search}`)}`;
   const nextRegisterUrl = `/register?next=${encodeURIComponent(`${location.pathname}${location.search}`)}`;
+
+  useEffect(() => {
+    if (!hasPayload) {
+      return;
+    }
+
+    sessionStorage.setItem("pendingCheckInPath", currentCheckInPath);
+  }, [currentCheckInPath, hasPayload]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

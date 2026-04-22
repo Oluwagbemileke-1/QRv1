@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getStoredUser, getUserDisplayName, logout, updateMyProfile } from "../api/auth";
+import { getStoredUser, getUserDisplayName, logout, refreshStoredUserProfile, updateMyProfile } from "../api/auth";
 import "./UserPortal.css";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
   const user = getStoredUser();
   const displayName = getUserDisplayName(user);
+  const [loadingProfile, setLoadingProfile] = useState(Boolean(user?.id));
+  const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({
     first_name: user?.first_name || "",
     last_name: user?.last_name || "",
@@ -18,6 +20,28 @@ export default function ProfilePage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  useEffect(() => {
+    if (!user?.id) {
+      setLoadingProfile(false);
+      return;
+    }
+
+    refreshStoredUserProfile()
+      .then((freshUser) => {
+        setForm({
+          first_name: freshUser.first_name || "",
+          last_name: freshUser.last_name || "",
+          username: freshUser.username || "",
+          email: freshUser.email || "",
+          phone: freshUser.phone || "",
+        });
+      })
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : "Failed to load profile.");
+      })
+      .finally(() => setLoadingProfile(false));
+  }, [user?.id]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setError("");
@@ -25,14 +49,52 @@ export default function ProfilePage() {
     setForm((current) => ({ ...current, [name]: value }));
   };
 
+  const resetProfileForm = async () => {
+    const freshUser = await refreshStoredUserProfile();
+    setForm({
+      first_name: freshUser.first_name || "",
+      last_name: freshUser.last_name || "",
+      username: freshUser.username || "",
+      email: freshUser.email || "",
+      phone: freshUser.phone || "",
+    });
+  };
+
+  const handleStartEdit = () => {
+    setError("");
+    setSuccess("");
+    setIsEditing(true);
+  };
+
+  const handleCancelEdit = async () => {
+    setSaving(true);
+    setError("");
+    setSuccess("");
+    try {
+      await resetProfileForm();
+      setIsEditing(false);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to reload profile.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!isEditing) {
+      return;
+    }
+
     setSaving(true);
     setError("");
     setSuccess("");
 
     try {
       await updateMyProfile(form);
+      await resetProfileForm();
+      setIsEditing(false);
       setSuccess("Profile updated successfully.");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to update profile.");
@@ -67,43 +129,66 @@ export default function ProfilePage() {
         <section className="user-panel user-panel--narrow">
           <div className="user-panel-head">
             <h2>My Profile</h2>
-            <p>Update your account details here. Logout lives here too.</p>
+            <p>Review your account details here. Tap edit when you want to make changes.</p>
           </div>
 
           <form className="user-form" onSubmit={handleSubmit}>
             {error && <div className="user-alert user-alert--error">{error}</div>}
             {success && <div className="user-alert user-alert--success">{success}</div>}
+            {loadingProfile && <div className="user-note">Loading your latest profile details...</div>}
+            {!loadingProfile && !form.phone && (
+              <div className="user-note">
+                No phone number is currently saved on your account. Tap <strong>Edit profile</strong> to add one.
+              </div>
+            )}
 
             <div className="user-form-grid">
               <label className="user-field">
                 <span>First name</span>
-                <input name="first_name" value={form.first_name} onChange={handleChange} />
+                <input name="first_name" value={form.first_name} onChange={handleChange} disabled={!isEditing || saving} />
               </label>
               <label className="user-field">
                 <span>Last name</span>
-                <input name="last_name" value={form.last_name} onChange={handleChange} />
+                <input name="last_name" value={form.last_name} onChange={handleChange} disabled={!isEditing || saving} />
               </label>
             </div>
 
             <label className="user-field">
               <span>Username</span>
-              <input name="username" value={form.username} onChange={handleChange} />
+              <input name="username" value={form.username} onChange={handleChange} disabled={!isEditing || saving} />
             </label>
 
             <label className="user-field">
               <span>Email</span>
-              <input name="email" type="email" value={form.email} onChange={handleChange} />
+              <input name="email" type="email" value={form.email} onChange={handleChange} disabled={!isEditing || saving} />
             </label>
 
             <label className="user-field">
               <span>Phone</span>
-              <input name="phone" value={form.phone} onChange={handleChange} />
+              <input
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
+                disabled={!isEditing || saving}
+                placeholder={isEditing ? "Add your phone number" : ""}
+              />
             </label>
 
             <div className="user-actions">
-              <button className="user-btn user-btn--primary" type="submit" disabled={saving}>
-                {saving ? "Saving..." : "Save profile"}
-              </button>
+              {isEditing ? (
+                <>
+                  <button className="user-btn user-btn--primary" type="submit" disabled={saving}>
+                    {saving ? "Saving..." : "Save changes"}
+                  </button>
+                  <button className="user-btn user-btn--ghost" type="button" onClick={() => void handleCancelEdit()} disabled={saving}>
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button className="user-btn user-btn--primary" type="button" onClick={handleStartEdit} disabled={loadingProfile}>
+                  Edit profile
+                </button>
+              )}
               <button className="user-btn user-btn--ghost" type="button" onClick={handleLogout}>
                 Log out
               </button>

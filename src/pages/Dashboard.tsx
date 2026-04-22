@@ -57,10 +57,6 @@ export default function Dashboard() {
     [events]
   );
 
-  if (isAdmin) {
-    return null;
-  }
-
   return (
     <div className="dash-wrapper">
       <header className="dash-header">

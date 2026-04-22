@@ -59,13 +59,14 @@ export default function AttendancePage() {
       .finally(() => setLoading(false));
   }, [isAdmin, navigate]);
 
-  if (isAdmin) {
-    return null;
-  }
+  const records = useMemo<AttendanceRecord[]>(
+    () => (Array.isArray(data?.records) ? data.records : []),
+    [data]
+  );
 
   const filtered = useMemo<AttendanceRecord[]>(() => {
-    if (!data) return [];
-    let list = data.records;
+    if (!records.length) return [];
+    let list = [...records];
     if (filter !== "all") list = list.filter((r) => r.status === filter);
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -78,7 +79,7 @@ export default function AttendancePage() {
     return list.sort(
       (a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
     );
-  }, [data, filter, search]);
+  }, [records, filter, search]);
 
   const tabs: { key: FilterTab; label: string; count: number }[] = [
     { key: "all",      label: "All",      count: data?.total    ?? 0 },

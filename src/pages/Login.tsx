@@ -12,7 +12,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const nextPath = useMemo(() => {
     const params = new URLSearchParams(location.search);
-    return params.get("next") || "";
+    return params.get("next") || sessionStorage.getItem("pendingCheckInPath") || "";
   }, [location.search]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,6 +34,7 @@ export default function Login() {
       }
 
       if (nextPath) {
+        sessionStorage.removeItem("pendingCheckInPath");
         navigate(nextPath);
         return;
       }

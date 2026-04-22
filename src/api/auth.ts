@@ -203,6 +203,33 @@ function inferRoleFromClaims(claims: Record<string, unknown> | null): "user" | "
   return "user";
 }
 
+function coerceNumericId(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return 0;
+}
+
+function readUserIdFromClaims(claims: Record<string, unknown> | null): number {
+  if (!claims) {
+    return 0;
+  }
+
+  return (
+    coerceNumericId(claims.user_id) ||
+    coerceNumericId(claims.id) ||
+    coerceNumericId(claims.sub)
+  );
+}
+
 function normalizeUser(data: AuthResponse): AuthUser | null {
   const directUser = data.user;
   const nestedUser = data.data?.user;
@@ -213,6 +240,7 @@ function normalizeUser(data: AuthResponse): AuthUser | null {
   if (candidate) {
     return {
       ...candidate,
+      id: candidate.id || readUserIdFromClaims(claims),
       role:
         candidate.role ||
         (candidate.is_superuser || candidate.is_staff ? "admin" : inferRoleFromClaims(claims)),
@@ -220,10 +248,11 @@ function normalizeUser(data: AuthResponse): AuthUser | null {
   }
 
   return {
-    id: typeof claims?.user_id === "number" ? claims.user_id : 0,
+    id: readUserIdFromClaims(claims),
     username:
       data.username ||
       (typeof claims?.username === "string" ? claims.username : "") ||
+      (typeof claims?.preferred_username === "string" ? claims.preferred_username : "") ||
       data.email ||
       "",
     email:
@@ -401,6 +430,38 @@ export async function getUserDetail(id: number): Promise<AuthResponse> {
   return handleResponse<AuthResponse>(res);
 }
 
+export async function refreshStoredUserProfile(): Promise<AuthUser> {
+  const currentUser = getStoredUser();
+
+  if (!currentUser?.id) {
+    throw new Error("No signed-in user found.");
+  }
+
+  const response = await getUserDetail(currentUser.id);
+  const responseUser = response.user || response.data?.user;
+  const nextUser: AuthUser = {
+    ...currentUser,
+    ...(responseUser || {}),
+    id: responseUser?.id || currentUser.id,
+    username: responseUser?.username || response.username || currentUser.username,
+    email: responseUser?.email || response.email || currentUser.email,
+    first_name: responseUser?.first_name || response.first_name || currentUser.first_name,
+    last_name: responseUser?.last_name || response.last_name || currentUser.last_name,
+    phone: responseUser?.phone ?? currentUser.phone,
+    role: responseUser?.role || response.role || currentUser.role,
+    is_staff: responseUser?.is_staff ?? response.is_staff ?? currentUser.is_staff,
+    is_superuser: responseUser?.is_superuser ?? response.is_superuser ?? currentUser.is_superuser,
+  };
+
+  localStorage.setItem("user", JSON.stringify({
+    ...currentUser,
+    ...nextUser,
+    phone: nextUser.phone ?? currentUser.phone,
+  }));
+
+  return getStoredUser() as AuthUser;
+}
+
 export async function updateUser(
   id: number,
   payload: Partial<RegisterPayload>
@@ -445,6 +506,10 @@ export function getStoredToken(): string | null {
   return localStorage.getItem("token");
 }
 
+export function getStoredRefreshToken(): string | null {
+  return localStorage.getItem("refresh");
+}
+
 function buildUserFromClaims(
   claims: Record<string, unknown>,
   existingUser?: Partial<AuthUser> | null
@@ -455,10 +520,11 @@ function buildUserFromClaims(
   return {
     id:
       existingUser?.id ||
-      (typeof claims.user_id === "number" ? claims.user_id : 0),
+      readUserIdFromClaims(claims),
     username:
       existingUser?.username ||
       (typeof claims.username === "string" ? claims.username : "") ||
+      (typeof claims.preferred_username === "string" ? claims.preferred_username : "") ||
       (typeof claims.email === "string" ? claims.email : ""),
     email:
       existingUser?.email ||
