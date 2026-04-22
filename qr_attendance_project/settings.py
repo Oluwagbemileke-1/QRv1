@@ -29,7 +29,10 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = [
-    "*"
+    "qr-attendance-api-smj1.onrender.com",
+    "qrv1-5shu.onrender.com",
+    "localhost",
+    "127.0.0.1",
 ]
 
 
@@ -67,7 +70,16 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://qrv1-5shu.onrender.com')
+
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [
+    FRONTEND_URL.rstrip('/'),
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
 ROOT_URLCONF = 'qr_attendance_project.urls'
 
 TEMPLATES = [
@@ -163,7 +175,7 @@ REST_FRAMEWORK = {
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"  # Fallback, but we'll use Brevo API
 BREVO_API_KEY = os.getenv('BREVO_API_KEY')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'QRAMS <me@oluwaseunapata.com>')
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://qrv1-5shu.onrender.com')
+INTERNAL_SERVICE_TOKEN = os.getenv('INTERNAL_SERVICE_TOKEN', '_zShvMctsGB-FUj3PEoANeoPeXbxFe3OLjQo4IziwqI')
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),  # Access token valid for 24 hours

@@ -3,6 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
+from django.conf import settings
 from events.models import Event
 from users.models import User
 from .models import Attendance
@@ -19,6 +20,69 @@ from datetime import timedelta
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Count
 from .utils import validate_qr_code
+
+
+@swagger_auto_schema(
+    method='post',
+    tags=["ATTENDANCE"],
+    operation_summary="Validate Scan Access",
+    operation_description="Internal endpoint for .NET to confirm event code and invited-user access",
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=["username", "event_code"],
+        properties={
+            "username": openapi.Schema(type=openapi.TYPE_STRING),
+            "event_code": openapi.Schema(type=openapi.TYPE_STRING),
+        },
+    ),
+)
+@api_view(['POST'])
+def validate_scan_access(request):
+    internal_token = request.headers.get("X-Internal-Token")
+    if internal_token != settings.INTERNAL_SERVICE_TOKEN:
+        return Response(
+            {"allowed": False, "message": "Unauthorized"},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    username = request.data.get("username")
+    event_code = request.data.get("event_code")
+    userlat = request.data.get("latitude")
+    userlon = request.data.get("longitude")
+    ip_address = request.data.get("ip_address")
+    device_info = request.data.get("device_info")
+
+    if not username or not event_code:
+        return Response(
+            {"allowed": False, "message": "username and event_code are required"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        user = User.objects.get(username=username, is_active=True, is_verified=True)
+    except User.DoesNotExist:
+        return Response(
+            {"allowed": False, "message": "User not found or not eligible"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    try:
+        event = Event.objects.get(event_code__iexact=event_code, is_active=True)
+    except Event.DoesNotExist:
+        return Response(
+            {"allowed": False, "message": "Invalid event code"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    access = get_scan_access_result(user, event, userlat, userlon, ip_address, device_info)
+    return Response(
+        {
+            "allowed": access["allowed"],
+            "event_id": str(event.id),
+            "message": access["message"],
+        },
+        status=access["status"],
+    )
 
 
 
@@ -83,6 +147,43 @@ def can_view_event_attendance(user, event):
     return event.attendees.filter(id=user.id).exists()
 
 
+def get_scan_access_result(user, event, userlat=None, userlon=None, ip_address=None, device_info=None):
+    if not event.attendees.filter(id=user.id).exists():
+        return {"allowed": False, "message": "User was not invited to this event", "status": status.HTTP_403_FORBIDDEN}
+
+    if Attendance.objects.filter(user=user, event=event).exists():
+        return {"allowed": False, "message": "Attendance already recorded", "status": status.HTTP_400_BAD_REQUEST}
+
+    if timezone.now().date() != event.date:
+        return {"allowed": False, "message": "Wrong event day", "status": status.HTTP_400_BAD_REQUEST}
+
+    now = timezone.localtime().time()
+    if not (event.start_time <= now <= event.end_time):
+        return {"allowed": False, "message": "Not within attendance time", "status": status.HTTP_400_BAD_REQUEST}
+
+    if event.latitude is not None and event.longitude is not None:
+        if userlat is None or userlon is None:
+            return {"allowed": False, "message": "Location is required for this event", "status": status.HTTP_400_BAD_REQUEST}
+
+        distance = calculate_distance(userlat, userlon, event.latitude, event.longitude)
+        allowed_radius = 100
+        if distance > allowed_radius:
+            return {
+                "allowed": False,
+                "message": f"You are too far from the event location ({round(distance)}m away)",
+                "status": status.HTTP_403_FORBIDDEN,
+            }
+
+    if ip_address and device_info and Attendance.objects.filter(
+        event=event,
+        ip_address=ip_address,
+        device_info=device_info,
+    ).exists():
+        return {"allowed": False, "message": "This device already checked in for this event", "status": status.HTTP_403_FORBIDDEN}
+
+    return {"allowed": True, "message": "User is allowed to scan", "status": status.HTTP_200_OK}
+
+
 @swagger_auto_schema(
     method='post',
     tags=["📍 ATTENDANCE"],
@@ -107,58 +208,19 @@ def check_in(request):
     except Event.DoesNotExist:
         return Response({"error":"Invalid event code"}, status=status.HTTP_404_NOT_FOUND)
     
-    # Validate QR with .NET API
-    validation = validate_qr_code(payload, request.user.username)
-    if not validation['valid']:
-        if validation['fraud_detected']:
-            return Response({"error": "Fraudulent scan detected"}, status=status.HTTP_403_FORBIDDEN)
-        else:
-            return Response({"error": validation['message']}, status=status.HTTP_400_BAD_REQUEST)
-    
-    if not event.attendees.filter(id=request.user.id).exists():
-        return Response({"error":"Not assigned to event"}, status=status.HTTP_403_FORBIDDEN)
-    
-    if Attendance.objects.filter(user=request.user, event=event).exists():
-        return Response({"error":"Already marked attendance"}, status=status.HTTP_400_BAD_REQUEST)
-    
-    if timezone.now().date() != event.date:
-        return Response({"error":"Wrong event day"}, status=status.HTTP_400_BAD_REQUEST)
-    
-    now = timezone.localtime().time()
-    if not(event.start_time <= now <= event.end_time):
-        return Response({"error":"Not within attendance time"}, status=status.HTTP_400_BAD_REQUEST)
-    
-
-    print("NOW:", now)
-    print("START:", event.start_time)
-    print("END:", event.end_time)
-
-    if event.latitude is not None and event.longitude is not None:
-        if userlat is None or userlon is None:
-            return Response(
-                {"error": "Location is required for this event"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        distance = calculate_distance(
-            userlat, userlon,
-            event.latitude, event.longitude
-        )
-        ALLOWED_RADIUS = 100
-        if distance > ALLOWED_RADIUS:
-            return Response({"error": f"You are too far from the event location ({round(distance)}m away)"}, status=status.HTTP_403_FORBIDDEN)
-
     ip = get_client_ip(request)
     device_info = request.META.get("HTTP_USER_AGENT", "")
 
-    if Attendance.objects.filter(
-        event=event,
-        ip_address=ip,
-        device_info=device_info
-    ).exists():
-        return Response(
-        {"error": "This device already checked in for this event"},
-        status=status.HTTP_403_FORBIDDEN
-    )
+    access = get_scan_access_result(request.user, event, userlat, userlon, ip, device_info)
+    if not access["allowed"]:
+        return Response({"error": access["message"]}, status=access["status"])
+
+    # Validate QR with .NET API
+    validation = validate_qr_code(payload, request.user.username, event_code)
+    if not validation['valid']:
+        if validation['fraud_detected']:
+            return Response({"error": validation['message']}, status=status.HTTP_403_FORBIDDEN)
+        return Response({"error": validation['message']}, status=status.HTTP_400_BAD_REQUEST)
 
     attendance = Attendance.objects.create(
         user=request.user,

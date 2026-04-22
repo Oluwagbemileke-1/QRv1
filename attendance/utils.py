@@ -51,33 +51,47 @@ def generate_qr_code(event_id, event_code):
         return None
 
 
-def validate_qr_code(qr_data, username):
+def validate_qr_code(qr_data, username, event_code):
     """
     Call .NET API to validate QR code and check for fraud
     """
     url = f"{DOTNET_API_BASE}/api/scan"
     payload = {
         'payload': qr_data,
-        'username': username
+        'username': username,
+        'eventCode': event_code,
     }
     try:
         response = requests.post(url, json=payload, timeout=DOTNET_API_TIMEOUT)
-        if response.status_code == 200:
+        try:
             data = response.json()
-            result = data.get('data', {})
-            scan_result = result.get('result')
+        except ValueError:
+            data = {}
+
+        result = data.get('data', {}) if isinstance(data, dict) else {}
+        scan_result = result.get('result')
+        message = 'API error'
+        if isinstance(data, dict):
+            message = result.get('message') or data.get('message') or data.get('error') or 'API error'
+
+        if response.status_code == 200:
             if scan_result == 'Success':
-                return {'valid': True, 'fraud_detected': False, 'message': 'Scan successful'}
-            elif scan_result == 'Fraud':
-                return {'valid': False, 'fraud_detected': True, 'message': 'Fraud detected'}
-            else:
-                return {'valid': False, 'fraud_detected': False, 'message': 'Invalid or expired QR code'}
-        elif response.status_code == 403:
-            return {'valid': False, 'fraud_detected': True, 'message': 'Fraud detected'}
-        elif response.status_code == 400:
-            return {'valid': False, 'fraud_detected': False, 'message': 'Invalid or expired QR code'}
-        else:
-            return {'valid': False, 'fraud_detected': False, 'message': 'API error'}
+                return {'valid': True, 'fraud_detected': False, 'message': message or 'Scan successful'}
+            if scan_result == 'Fraud':
+                return {'valid': False, 'fraud_detected': True, 'message': message or 'Fraud detected'}
+            return {'valid': False, 'fraud_detected': False, 'message': message or 'Invalid or expired QR code'}
+
+        if response.status_code == 403:
+            return {
+                'valid': False,
+                'fraud_detected': scan_result == 'Fraud',
+                'message': message or ('Fraud detected' if scan_result == 'Fraud' else 'Scan not allowed'),
+            }
+
+        if response.status_code == 400:
+            return {'valid': False, 'fraud_detected': False, 'message': message or 'Invalid or expired QR code'}
+
+        return {'valid': False, 'fraud_detected': False, 'message': message or 'API error'}
     except requests.RequestException as e:
         print(f"Error validating QR: {e}")
         return {'valid': False, 'fraud_detected': False, 'message': 'API error'}
