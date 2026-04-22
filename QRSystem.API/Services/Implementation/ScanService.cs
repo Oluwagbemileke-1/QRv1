@@ -46,10 +46,21 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
         {
             try
             {
+                var resolvedIp = string.IsNullOrWhiteSpace(ipAddress) ? "unknown" : ipAddress;
+
                 var parts = payload.Split(':');
                 if (parts.Length != 3)
                 {
                     _logger.LogWarning("Invalid payload format from {Username}, IP: {IpAddress}", username, ipAddress);
+                    await _scanRepository.AddAsync(ScanAttempt.Create(
+                        username,
+                        resolvedIp,
+                        null,
+                        Guid.Empty,
+                        ScanResults.InvalidPayload,
+                        location
+                    ));
+
                     return new ScanResponseDto
                     {
                         Result = ScanResults.InvalidPayload,
@@ -69,6 +80,24 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                 if (computedSignature != signature)
                 {
                     _logger.LogWarning("Invalid signature for EventId: {EventId}", eventId);
+                    await _scanRepository.AddAsync(ScanAttempt.Create(
+                        username,
+                        resolvedIp,
+                        null,
+                        eventId,
+                        ScanResults.InvalidPayload,
+                        location
+                    ));
+
+                    await _fraudService.LogFraudAsync(
+                        resolvedIp,
+                        username,
+                        eventId,
+                        null,
+                        FraudReasons.Tampered,
+                        "Payload signature mismatch"
+                    );
+
                     return new ScanResponseDto
                     {
                         Result = ScanResults.InvalidPayload,
@@ -81,6 +110,24 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                 if (DateTime.UtcNow > expiry)
                 {
                     _logger.LogWarning("Expired QR for EventId: {EventId}", eventId);
+                    await _scanRepository.AddAsync(ScanAttempt.Create(
+                        username,
+                        resolvedIp,
+                        null,
+                        eventId,
+                        ScanResults.Expired,
+                        location
+                    ));
+
+                    await _fraudService.LogFraudAsync(
+                        resolvedIp,
+                        username,
+                        eventId,
+                        null,
+                        FraudReasons.ExpiredQrCode,
+                        "QR code expired before scan"
+                    );
+
                     return new ScanResponseDto
                     {
                         Result = ScanResults.Expired,
@@ -92,6 +139,24 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                 var qrCode = await _qrCodeRepository.GetActiveQrBySessionAsync(eventId);
                 if (qrCode == null)
                 {
+                    await _scanRepository.AddAsync(ScanAttempt.Create(
+                        username,
+                        resolvedIp,
+                        null,
+                        eventId,
+                        ScanResults.NotFound,
+                        location
+                    ));
+
+                    await _fraudService.LogFraudAsync(
+                        resolvedIp,
+                        username,
+                        eventId,
+                        null,
+                        FraudReasons.Tampered,
+                        "No active QR found for this event"
+                    );
+
                     return new ScanResponseDto
                     {
                         Result = ScanResults.NotFound,
@@ -101,13 +166,13 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                 }
 
                 var isFraud = await _fraudService.CheckForFraudAsync(
-                    ipAddress, username, eventId, qrCode, payload
+                    resolvedIp, username, eventId, qrCode, payload
                 );
 
                 if (isFraud)
                 {
                     await _scanRepository.AddAsync(ScanAttempt.Create(
-                        username, ipAddress, qrCode.Id, eventId, ScanResults.Fraud, location
+                        username, resolvedIp, qrCode.Id, eventId, ScanResults.Fraud, location
                     ));
 
                     return new ScanResponseDto
@@ -122,16 +187,25 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                 var access = await _djangoValidationService.ValidateScanAccessAsync(
                     username,
                     eventCode,
-                    ipAddress,
+                    resolvedIp,
                     deviceInfo,
                     location
                 );
 
                 if (!access.Allowed)
                 {
+                    await _fraudService.LogFraudAsync(
+                        resolvedIp,
+                        username,
+                        eventId,
+                        qrCode.Id,
+                        FraudReasons.Tampered,
+                        access.Message
+                    );
+
                     await _scanRepository.AddAsync(ScanAttempt.Create(
                         username,
-                        ipAddress,
+                        resolvedIp,
                         qrCode.Id,
                         eventId,
                         ScanResults.Fraud,
@@ -147,7 +221,7 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                 }
 
                 await _scanRepository.AddAsync(ScanAttempt.Create(
-                    username, ipAddress, qrCode.Id, eventId, ScanResults.Success, location
+                    username, resolvedIp, qrCode.Id, eventId, ScanResults.Success, location
                 ));
 
                 qrCode.Deactivate();
