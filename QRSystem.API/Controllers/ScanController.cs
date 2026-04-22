@@ -40,23 +40,26 @@ namespace QRSystem.API.Controllers
                     payload: request.Payload,
                     ipAddress: ipAddress,
                     username: request.Username,
+                    eventCode: request.EventCode,
                     location: request.Location
                 );
 
-                if (result.Result == Core.Constants.ScanResults.Success)
-                {
+
+
+                if(result.Result == Core.Constants.ScanResults.Success)
+{
                     _logger.LogInformation("Scan successful for Username: {Username}", request.Username);
-                    return Ok(GenericResponse<object>.Success(result, "Scan processed successfully"));
+                    return Ok(GenericResponse<object>.Success(result, result.Message));
                 }
 
                 if (result.Result == Core.Constants.ScanResults.Fraud)
                 {
                     _logger.LogWarning("Fraudulent scan detected for Username: {Username}, IP: {IpAddress}", request.Username, ipAddress);
-                    return StatusCode(403, GenericResponse<object>.Failure("Fraudulent scan detected", "403"));
+                    return StatusCode(403, GenericResponse<object>.Failure(result.Message, "403"));
                 }
 
                 _logger.LogWarning("Scan failed for Username: {Username}", request.Username);
-                return BadRequest(GenericResponse<object>.Failure("Scan could not be processed", "400"));
+                return BadRequest(GenericResponse<object>.Failure(result.Message, "400"));
             }
             catch (Exception ex)
             {

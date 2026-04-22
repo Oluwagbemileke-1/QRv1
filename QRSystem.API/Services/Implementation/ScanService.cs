@@ -2,6 +2,7 @@
 using QRSystem.API.Core.DTOs;
 using QRSystem.API.Core.Models;
 using QRSystem.API.Infrastructure.Repositories.Interfaces;
+using QRSystem.API.Services.Implementations;
 using QRSystem.API.Services.Interfaces;
 using System.Security.Cryptography;
 using System.Text;
@@ -17,30 +18,34 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
         private readonly string _secretKey;
         private static readonly TimeZoneInfo _watZone =
             TimeZoneInfo.FindSystemTimeZoneById("Africa/Lagos");
+        private readonly IDjangoValidationService _djangoValidationService;
 
         public ScanService(
             IScanAttemptRepository scanRepository,
             IQrCodeRepository qrCodeRepository,
             IFraudService fraudService,
             ILogger<ScanService> logger,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IDjangoValidationService djangoValidationService)
         {
             _scanRepository = scanRepository;
             _qrCodeRepository = qrCodeRepository;
             _fraudService = fraudService;
             _logger = logger;
+            _djangoValidationService = djangoValidationService;
             _secretKey = configuration["QrSettings:SecretKey"];
         }
+
 
         public async Task<ScanResponseDto> ProcessScanAsync(
             string payload,
             string? ipAddress,
             string username,
+            string eventCode,
             string? location = null)
         {
             try
             {
-                // 1. Validate payload format
                 var parts = payload.Split(':');
                 if (parts.Length != 3)
                 {
@@ -58,7 +63,6 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                 var signature = parts[2];
                 var data = $"{parts[0]}:{parts[1]}";
 
-                // 2. Verify signature
                 using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_secretKey));
                 var computedSignature = Convert.ToBase64String(hmac.ComputeHash(Encoding.UTF8.GetBytes(data)));
 
@@ -73,7 +77,6 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                     };
                 }
 
-                // 3. Check expiry
                 var expiry = new DateTime(long.Parse(expiryTicks), DateTimeKind.Utc);
                 if (DateTime.UtcNow > expiry)
                 {
@@ -86,7 +89,6 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                     };
                 }
 
-                // 4. Look up active QR code
                 var qrCode = await _qrCodeRepository.GetActiveQrBySessionAsync(eventId);
                 if (qrCode == null)
                 {
@@ -98,7 +100,6 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                     };
                 }
 
-                // 5. Run fraud checks
                 var isFraud = await _fraudService.CheckForFraudAsync(
                     ipAddress, username, eventId, qrCode, payload
                 );
@@ -117,12 +118,38 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                     };
                 }
 
-                // 6. Mark attendance
+                var deviceInfo = "dotnet-service";
+                var access = await _djangoValidationService.ValidateScanAccessAsync(
+                    username,
+                    eventCode,
+                    ipAddress,
+                    deviceInfo,
+                    location
+                );
+
+                if (!access.Allowed)
+                {
+                    await _scanRepository.AddAsync(ScanAttempt.Create(
+                        username,
+                        ipAddress,
+                        qrCode.Id,
+                        eventId,
+                        ScanResults.Fraud,
+                        location
+                    ));
+
+                    return new ScanResponseDto
+                    {
+                        Result = ScanResults.Fraud,
+                        Message = access.Message,
+                        ScannedAt = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _watZone)
+                    };
+                }
+
                 await _scanRepository.AddAsync(ScanAttempt.Create(
                     username, ipAddress, qrCode.Id, eventId, ScanResults.Success, location
                 ));
 
-                // 7. Deactivate QR so it can't be reused
                 qrCode.Deactivate();
                 await _qrCodeRepository.UpdateAsync(qrCode);
 

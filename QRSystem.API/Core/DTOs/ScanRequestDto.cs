@@ -4,7 +4,9 @@
     {
         public string Payload { get; set; } = string.Empty;
         public string Username { get; set; } = string.Empty;
-        public string? Location { get; set; } 
+        public string? Location { get; set; }
+        public string EventCode { get; set; } = string.Empty;
+
 
     }
 }

@@ -8,6 +8,7 @@ using QRSystem.API.Core.Settings;
 using QRSystem.API.Infrastructure.Repositories.Implementation;
 using QRSystem.API.Infrastructure.Repositories.Implementations;
 using QRSystem.API.Infrastructure.Repositories.Interfaces;
+using QRSystem.API.Services.Implementations;
 using QRSystem.API.Services.Interfaces;
 using Serilog;
 
@@ -71,6 +72,15 @@ builder.Services.Configure<QrSettings>(
     builder.Configuration.GetSection("QrSettings")
 );
 
+builder.Services.Configure<DjangoApiSettings>(
+    builder.Configuration.GetSection("DjangoApi")
+);
+
+builder.Services.AddHttpClient<IDjangoValidationService, DjangoValidationService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["DjangoSettings:BaseUrl"]!);
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 
 var app = builder.Build();
 
