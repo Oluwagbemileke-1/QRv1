@@ -19,12 +19,19 @@ class EventSerializer(serializers.ModelSerializer):
             "start_time",
             "end_time",
             "location_name",
+            "latitude",
+            "longitude",
             "event_code",
             "status",
             "created_by",
             "created_at"
         )
         read_only_fields = ['created_by', 'created_at', 'event_code']
+        extra_kwargs = {
+            "location_name": {"required": True, "allow_blank": False},
+            "latitude": {"required": True},
+            "longitude": {"required": True},
+        }
 
 
     def get_created_by(self, obj):
@@ -49,12 +56,17 @@ class EventSerializer(serializers.ModelSerializer):
         if start_time and end_time:
             if start_time >= end_time:
                 raise serializers.ValidationError({"time":"End time must be after start time"})
+
+        location_name = data.get("location_name")
+        if location_name is not None and not str(location_name).strip():
+            raise serializers.ValidationError({"location_name": "Location name is required"})
+
         return data
 
 class UpdateEventSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
-        fields = ("title", "description", "date", "start_time", "end_time", "location_name")
+        fields = ("title", "description", "date", "start_time", "end_time", "location_name", "latitude", "longitude")
         extra_kwargs = {field: {"required": False} for field in fields}
     def validate(self, data):
         instance = self.instance
@@ -78,6 +90,16 @@ class UpdateEventSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "End time must be after start time"
             )
+
+        if "location_name" in data and not str(data.get("location_name", "")).strip():
+            raise serializers.ValidationError({"location_name": "Location name is required"})
+
+        has_lat = "latitude" in data
+        has_lon = "longitude" in data
+        if has_lat != has_lon:
+            raise serializers.ValidationError({
+                "location": "latitude and longitude must be updated together"
+            })
         
         return data
         

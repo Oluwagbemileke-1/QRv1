@@ -11,8 +11,8 @@ class Attendance(models.Model):
     scan_time = models.DateTimeField(auto_now_add=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     device_info = models.TextField(null=True, blank=True)
-    latitude = models.FloatField(null=True, blank=True)
-    longitude = models.FloatField(null=True, blank=True)
+    latitude = models.FloatField()
+    longitude = models.FloatField()
 
     class Meta:
         unique_together = ('user', 'event')

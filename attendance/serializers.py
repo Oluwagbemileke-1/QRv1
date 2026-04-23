@@ -3,8 +3,8 @@ from .models import Attendance
 
 
 class AttendanceCheckInSerializer(serializers.Serializer):
-    latitude = serializers.FloatField(required=False, allow_null=True)
-    longitude = serializers.FloatField(required=False, allow_null=True)
+    latitude = serializers.FloatField(required=True)
+    longitude = serializers.FloatField(required=True)
     event_code = serializers.CharField()
     payload = serializers.CharField(required=False, allow_blank=False)
 
@@ -15,6 +15,15 @@ class AttendanceCheckInSerializer(serializers.Serializer):
                 "payload": "This field is required."
             })
         return attrs
+
+class ValidateScanAccessSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    event_code = serializers.CharField()
+    ip_address = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    device_info = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    location = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    latitude = serializers.FloatField(required=False, allow_null=True)
+    longitude = serializers.FloatField(required=False, allow_null=True)
 
 
 class AttendanceSerializer(serializers.ModelSerializer):

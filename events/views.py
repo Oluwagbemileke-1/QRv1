@@ -12,7 +12,7 @@ from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from events.tasks import send_invitation_email,create_event_email,send_bulk_invitation_email
+from events.tasks import send_invitation_email,create_event_email,send_bulk_invitation_email,send_bulk_event_update_email
 import re
 from attendance.utils import generate_qr_code
 from django.conf import settings
@@ -532,6 +532,9 @@ def update_event(request, event_id):
     
 
     serializer.save()
+    location_fields = {"location_name", "latitude", "longitude"}
+    change_reason = "recalibrated" if any(field in data for field in location_fields) else "updated"
+    send_bulk_event_update_email(event.id, reason=change_reason)
 
     return Response(
         {"message": "Event updated successfully", "data": serializer.data},
@@ -564,6 +567,7 @@ def delete_event(request, event_id):
         return Response({"error":"You are not allowed to delete this event."}, status=status.HTTP_403_FORBIDDEN)
     event.is_active = False
     event.save()
+    send_bulk_event_update_email(event.id, reason="cancelled")
 
     return Response({"message": "Event deleted"}, status=status.HTTP_200_OK)
 

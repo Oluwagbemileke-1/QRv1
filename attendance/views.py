@@ -1,5 +1,5 @@
 from rest_framework.decorators import api_view,permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from django.utils import timezone
@@ -7,7 +7,7 @@ from django.conf import settings
 from events.models import Event
 from users.models import User
 from .models import Attendance
-from .serializers import AttendanceSerializer,AttendanceCheckInSerializer
+from .serializers import AttendanceSerializer,AttendanceCheckInSerializer, ValidateScanAccessSerializer
 import math,csv
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -20,6 +20,8 @@ from datetime import timedelta
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Count
 from .utils import validate_qr_code
+
+HARD_CODED_ALLOWED_RADIUS_M = 150
 
 
 @swagger_auto_schema(
@@ -37,26 +39,29 @@ from .utils import validate_qr_code
     ),
 )
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def validate_scan_access(request):
     internal_token = request.headers.get("X-Internal-Token")
     if internal_token != settings.INTERNAL_SERVICE_TOKEN:
         return Response(
-            {"allowed": False, "message": "Unauthorized"},
-            status=status.HTTP_401_UNAUTHORIZED,
+            {"allowed": False, "message": "Unauthorized internal request"},
+            status=status.HTTP_403_FORBIDDEN,
         )
 
-    username = request.data.get("username")
-    event_code = request.data.get("event_code")
-    userlat = request.data.get("latitude")
-    userlon = request.data.get("longitude")
-    ip_address = request.data.get("ip_address")
-    device_info = request.data.get("device_info")
-
-    if not username or not event_code:
+    serializer = ValidateScanAccessSerializer(data=request.data)
+    if not serializer.is_valid():
         return Response(
-            {"allowed": False, "message": "username and event_code are required"},
+            {"allowed": False, "message": "Invalid request payload"},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+    payload = serializer.validated_data
+    username = payload.get("username")
+    event_code = payload.get("event_code")
+    userlat = payload.get("latitude")
+    userlon = payload.get("longitude")
+    ip_address = payload.get("ip_address")
+    device_info = payload.get("device_info")
 
     try:
         user = User.objects.get(username=username, is_active=True, is_verified=True)
@@ -78,7 +83,6 @@ def validate_scan_access(request):
     return Response(
         {
             "allowed": access["allowed"],
-            "event_id": str(event.id),
             "message": access["message"],
         },
         status=access["status"],
@@ -148,6 +152,18 @@ def can_view_event_attendance(user, event):
 
 
 def get_scan_access_result(user, event, userlat=None, userlon=None, ip_address=None, device_info=None):
+    if userlat is None or userlon is None:
+        return {"allowed": False, "message": "Location is required for check-in", "status": status.HTTP_400_BAD_REQUEST}
+
+    try:
+        userlat = float(userlat)
+        userlon = float(userlon)
+    except (TypeError, ValueError):
+        return {"allowed": False, "message": "Invalid location coordinates", "status": status.HTTP_400_BAD_REQUEST}
+
+    if event.latitude is None or event.longitude is None:
+        return {"allowed": False, "message": "Event location is not configured", "status": status.HTTP_400_BAD_REQUEST}
+
     if not event.attendees.filter(id=user.id).exists():
         return {"allowed": False, "message": "User was not invited to this event", "status": status.HTTP_403_FORBIDDEN}
 
@@ -161,18 +177,13 @@ def get_scan_access_result(user, event, userlat=None, userlon=None, ip_address=N
     if not (event.start_time <= now <= event.end_time):
         return {"allowed": False, "message": "Not within attendance time", "status": status.HTTP_400_BAD_REQUEST}
 
-    if event.latitude is not None and event.longitude is not None:
-        if userlat is None or userlon is None:
-            return {"allowed": False, "message": "Location is required for this event", "status": status.HTTP_400_BAD_REQUEST}
-
-        distance = calculate_distance(userlat, userlon, event.latitude, event.longitude)
-        allowed_radius = 100
-        if distance > allowed_radius:
-            return {
-                "allowed": False,
-                "message": f"You are too far from the event location ({round(distance)}m away)",
-                "status": status.HTTP_403_FORBIDDEN,
-            }
+    distance = calculate_distance(userlat, userlon, event.latitude, event.longitude)
+    if distance > HARD_CODED_ALLOWED_RADIUS_M:
+        return {
+            "allowed": False,
+            "message": f"You are too far from the event location ({round(distance)}m away)",
+            "status": status.HTTP_403_FORBIDDEN,
+        }
 
     if ip_address and device_info and Attendance.objects.filter(
         event=event,
@@ -181,7 +192,7 @@ def get_scan_access_result(user, event, userlat=None, userlon=None, ip_address=N
     ).exists():
         return {"allowed": False, "message": "This device already checked in for this event", "status": status.HTTP_403_FORBIDDEN}
 
-    return {"allowed": True, "message": "User is allowed to scan", "status": status.HTTP_200_OK}
+    return {"allowed": True, "message": "Scan allowed", "status": status.HTTP_200_OK}
 
 
 @swagger_auto_schema(
