@@ -105,7 +105,7 @@ export default function AdminDashboard() {
     <div className="adm-wrapper">
       <header className="adm-header">
         <div className="adm-header-left">
-          <div className="adm-logo">QR</div>
+          <div className="adm-logo">QRAMS</div>
           <span className="adm-badge">Admin</span>
         </div>
         <div className="adm-header-right">

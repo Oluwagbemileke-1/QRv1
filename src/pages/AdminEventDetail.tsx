@@ -20,6 +20,60 @@ import "./AdminLayout.css";
 
 type Tab = "overview" | "qr" | "attendance" | "analytics" | "fraud";
 
+interface LocationSuggestion {
+  place_id: number;
+  display_name: string;
+  lat: string;
+  lon: string;
+}
+
+async function searchLocations(query: string): Promise<LocationSuggestion[]> {
+  const url = new URL("https://nominatim.openstreetmap.org/search");
+  url.searchParams.set("q", query);
+  url.searchParams.set("format", "jsonv2");
+  url.searchParams.set("limit", "5");
+  url.searchParams.set("countrycodes", "ng");
+  url.searchParams.set("bounded", "1");
+  url.searchParams.set("viewbox", "2.6680,13.8920,14.6780,4.2400");
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Could not search locations right now.");
+  }
+
+  return await response.json() as LocationSuggestion[];
+}
+
+async function reverseGeocode(latitude: number, longitude: number): Promise<LocationSuggestion> {
+  const url = new URL("https://nominatim.openstreetmap.org/reverse");
+  url.searchParams.set("lat", String(latitude));
+  url.searchParams.set("lon", String(longitude));
+  url.searchParams.set("format", "jsonv2");
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Could not verify your current location.");
+  }
+
+  const data = await response.json() as { place_id?: number; display_name?: string; lat?: string; lon?: string };
+  return {
+    place_id: data.place_id || 0,
+    display_name: data.display_name || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+    lat: data.lat || String(latitude),
+    lon: data.lon || String(longitude),
+  };
+}
+
 function TabBtn({ id, active, onClick, children }: { id: Tab; active: Tab; onClick: (t: Tab) => void; children: React.ReactNode }) {
   return (
     <button
@@ -71,7 +125,13 @@ export default function AdminEventDetail() {
     start_time: "",
     end_time: "",
     location_name: "",
+    latitude: null as number | null,
+    longitude: null as number | null,
   });
+  const [editLocationQuery, setEditLocationQuery] = useState("");
+  const [editLocationMatches, setEditLocationMatches] = useState<LocationSuggestion[]>([]);
+  const [editLocationLoading, setEditLocationLoading] = useState(false);
+  const [editLocationError, setEditLocationError] = useState("");
 
   // QR
   const [qrData, setQrData] = useState<{
@@ -181,8 +241,54 @@ export default function AdminEventDetail() {
       start_time: toTimeInput(event.start_time),
       end_time: toTimeInput(event.end_time),
       location_name: event.location_name || "",
+      latitude: (event as Event & { latitude?: number | null }).latitude ?? null,
+      longitude: (event as Event & { longitude?: number | null }).longitude ?? null,
     });
+    setEditLocationQuery(event.location_name || "");
   }, [event]);
+
+  useEffect(() => {
+    if (!showEditForm) {
+      return;
+    }
+
+    const query = editLocationQuery.trim();
+    if (query.length < 3) {
+      setEditLocationMatches([]);
+      setEditLocationError("");
+      setEditLocationLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setEditLocationLoading(true);
+    setEditLocationError("");
+
+    const timer = window.setTimeout(() => {
+      searchLocations(query)
+        .then((results) => {
+          if (!cancelled) {
+            setEditLocationMatches(results);
+          }
+        })
+        .catch((err: Error) => {
+          if (!cancelled) {
+            setEditLocationMatches([]);
+            setEditLocationError(err.message || "Could not search locations.");
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setEditLocationLoading(false);
+          }
+        });
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [editLocationQuery, showEditForm]);
 
   // Load attendees when tab opens
   useEffect(() => {
@@ -424,6 +530,10 @@ export default function AdminEventDetail() {
     setEditMsg("");
 
     try {
+      if (editForm.location_name && (editForm.latitude == null || editForm.longitude == null)) {
+        throw new Error("Select a real location suggestion or use your current location so latitude and longitude are updated too.");
+      }
+
       const response = await updateEvent(eventId, {
         title: editForm.title,
         description: editForm.description,
@@ -431,6 +541,8 @@ export default function AdminEventDetail() {
         start_time: editForm.start_time,
         end_time: editForm.end_time,
         location_name: editForm.location_name,
+        latitude: editForm.latitude,
+        longitude: editForm.longitude,
       });
 
       setEvent((current) => (current ? { ...current, ...response.data } : response.data));
@@ -441,6 +553,50 @@ export default function AdminEventDetail() {
     } finally {
       setEditLoading(false);
     }
+  };
+
+  const applyEditLocationSuggestion = (suggestion: LocationSuggestion) => {
+    setEditForm((current) => ({
+      ...current,
+      location_name: suggestion.display_name,
+      latitude: Number(suggestion.lat),
+      longitude: Number(suggestion.lon),
+    }));
+    setEditLocationQuery(suggestion.display_name);
+    setEditLocationMatches([]);
+    setEditLocationError("");
+  };
+
+  const handleUseCurrentEditLocation = () => {
+    if (!navigator.geolocation) {
+      setEditLocationError("Location detection is unavailable in this browser.");
+      return;
+    }
+
+    setEditLocationLoading(true);
+    setEditLocationError("");
+
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        try {
+          const suggestion = await reverseGeocode(coords.latitude, coords.longitude);
+          applyEditLocationSuggestion(suggestion);
+        } catch (err) {
+          setEditLocationError(err instanceof Error ? err.message : "Could not verify your current location.");
+        } finally {
+          setEditLocationLoading(false);
+        }
+      },
+      () => {
+        setEditLocationLoading(false);
+        setEditLocationError("Allow location access to use your current location.");
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 60000,
+      }
+    );
   };
 
   useEffect(() => {
@@ -523,7 +679,7 @@ export default function AdminEventDetail() {
       {/* Header */}
       <header className="adm-header">
         <div className="adm-header-left">
-          <div className="adm-logo">QR</div>
+          <div className="adm-logo">QRAMS</div>
           <span className="adm-badge">Admin</span>
         </div>
         <div className="adm-header-right">
@@ -591,7 +747,53 @@ export default function AdminEventDetail() {
                   </div>
                   <div className="adm-field">
                     <label className="adm-label">Location</label>
-                    <input className="adm-input" name="location_name" value={editForm.location_name} onChange={handleEditChange} />
+                    <div className="adm-location-wrap">
+                      <input
+                        className="adm-input"
+                        name="location_name"
+                        placeholder="Search for a real venue or address"
+                        value={editLocationQuery}
+                        onChange={(e) => {
+                          const nextValue = e.target.value;
+                          setEditLocationQuery(nextValue);
+                          setEditLocationError("");
+                          setEditForm((current) => ({
+                            ...current,
+                            location_name: nextValue,
+                            latitude: null,
+                            longitude: null,
+                          }));
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="adm-btn adm-btn--ghost adm-btn--sm"
+                        onClick={handleUseCurrentEditLocation}
+                        disabled={editLocationLoading}
+                      >
+                        {editLocationLoading ? "Finding..." : "Use current location"}
+                      </button>
+                      {editLocationError && <p className="adm-location-help adm-location-help--error">{editLocationError}</p>}
+                      {!editLocationError && (
+                        <p className="adm-location-help">
+                          Pick a matching place so the event updates its verified location and coordinates.
+                        </p>
+                      )}
+                      {editLocationMatches.length > 0 && (
+                        <div className="adm-location-results">
+                          {editLocationMatches.map((suggestion) => (
+                            <button
+                              key={suggestion.place_id}
+                              type="button"
+                              className="adm-location-option"
+                              onClick={() => applyEditLocationSuggestion(suggestion)}
+                            >
+                              {suggestion.display_name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="adm-field-row">
@@ -602,6 +804,16 @@ export default function AdminEventDetail() {
                   <div className="adm-field">
                     <label className="adm-label">End Time</label>
                     <input className="adm-input" type="time" name="end_time" value={editForm.end_time} onChange={handleEditChange} required />
+                  </div>
+                </div>
+                <div className="adm-field-row">
+                  <div className="adm-field">
+                    <label className="adm-label">Latitude</label>
+                    <input className="adm-input" type="number" step="any" value={editForm.latitude ?? ""} readOnly />
+                  </div>
+                  <div className="adm-field">
+                    <label className="adm-label">Longitude</label>
+                    <input className="adm-input" type="number" step="any" value={editForm.longitude ?? ""} readOnly />
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.5rem", flexWrap: "wrap" }}>

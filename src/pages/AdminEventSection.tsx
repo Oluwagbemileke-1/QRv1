@@ -69,7 +69,7 @@ export default function AdminEventSection({ section }: { section: AdminSectionKi
     <div className="adm-wrapper">
       <header className="adm-header">
         <div className="adm-header-left">
-          <div className="adm-logo">QR</div>
+          <div className="adm-logo">QRAMS</div>
           <span className="adm-badge">Admin</span>
           <nav className="adm-subnav" style={{ border: "none", padding: "0", background: "transparent", marginLeft: "1rem" }}>
             <Link to="/admin/dashboard" className="adm-subnav-link">Dashboard</Link>
