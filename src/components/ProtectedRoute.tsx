@@ -14,20 +14,15 @@ export default function ProtectedRoute({ children, requiredRole }: Props) {
   );
 
   useEffect(() => {
-    let cancelled = false;
-
     if (isAuthenticated()) {
-      setAuthStatus("ready");
       return;
     }
 
-    const refresh = getStoredRefreshToken();
-    if (!refresh) {
-      setAuthStatus("unauthenticated");
+    if (!getStoredRefreshToken()) {
       return;
     }
 
-    setAuthStatus("checking");
+    let cancelled = false;
 
     refreshAccessToken()
       .then((token) => {

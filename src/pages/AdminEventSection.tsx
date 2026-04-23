@@ -46,9 +46,6 @@ export default function AdminEventSection({ section }: { section: AdminSectionKi
   const copy = SECTION_COPY[section];
 
   useEffect(() => {
-    setLoading(true);
-    setError("");
-
     getAllEvents({ search })
       .then((data) => setEvents(data.results || []))
       .catch((err: Error) => setError(err.message || "Failed to load events."))
@@ -104,7 +101,11 @@ export default function AdminEventSection({ section }: { section: AdminSectionKi
               className="adm-search"
               placeholder="Search events..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setLoading(true);
+                setError("");
+                setSearch(e.target.value);
+              }}
             />
           </div>
         </div>

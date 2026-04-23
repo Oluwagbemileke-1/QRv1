@@ -38,7 +38,7 @@ export default function Register() {
       return `/check-in?${checkInParams.toString()}`;
     }
 
-    return "";
+    return sessionStorage.getItem("pendingCheckInPath") || localStorage.getItem("pendingCheckInPath") || "";
   })();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

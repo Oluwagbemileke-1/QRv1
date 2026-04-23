@@ -94,8 +94,8 @@ export default function Dashboard() {
             <span className="dash-stat-label">Invited Events</span>
           </div>
           <div className="dash-stat dash-stat--blue">
-            <span className="dash-stat-num">{loading ? "-" : events.upcoming.length}</span>
-            <span className="dash-stat-label">Upcoming</span>
+            <span className="dash-stat-num">{loading ? "-" : events.active.length}</span>
+            <span className="dash-stat-label">Active Now</span>
           </div>
           <div className="dash-stat dash-stat--green">
             <span className="dash-stat-num">{loading ? "-" : attendance.attended}</span>
@@ -111,7 +111,10 @@ export default function Dashboard() {
           <article className="dash-panel">
             <div className="dash-panel-head">
               <h2>Ready For You</h2>
-              <p>Active and upcoming events you've been invited to. Scan the QR shared for your event to begin check-in.</p>
+              <p>
+                Active and upcoming events you've been invited to. Active now: {loading ? "-" : events.active.length}.
+                Upcoming later: {loading ? "-" : events.upcoming.length}. Scan the QR shared for your event to begin check-in.
+              </p>
             </div>
             <div className="dash-panel-body">
               {loading ? <p className="dash-empty">Loading events...</p> : (

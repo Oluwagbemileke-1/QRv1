@@ -18,10 +18,8 @@ export default function AdminUsers() {
   const handleLogout = async () => { await logout(); navigate("/login"); };
 
   const load = useCallback(() => {
-    setLoading(true);
-    setError("");
     listUsers(search, roleFilter)
-      .then((d: any) => {
+      .then((d) => {
         setUsers(d.results || []);
         setCount(d.count || 0);
       })
@@ -61,7 +59,11 @@ export default function AdminUsers() {
               <button
                 key={r || "all"}
                 className={`adm-btn adm-btn--sm ${roleFilter === r ? "adm-btn--primary" : "adm-btn--ghost"}`}
-                onClick={() => setRoleFilter(r)}
+                onClick={() => {
+                  setLoading(true);
+                  setError("");
+                  setRoleFilter(r);
+                }}
               >
                 {r ? r.charAt(0).toUpperCase() + r.slice(1) : "All"}
               </button>
@@ -73,7 +75,11 @@ export default function AdminUsers() {
               <path d="M9.5 9.5l3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
             </svg>
             <input className="adm-search" placeholder="Search users..." value={search}
-              onChange={(e) => setSearch(e.target.value)} />
+              onChange={(e) => {
+                setLoading(true);
+                setError("");
+                setSearch(e.target.value);
+              }} />
           </div>
         </div>
 

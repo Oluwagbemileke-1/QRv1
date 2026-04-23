@@ -1,10 +1,31 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getStoredUser, getUserDisplayName } from "../api/auth";
 import { submitScan } from "../api/dotnet";
 import "./UserPortal.css";
 
+async function reverseGeocode(latitude: number, longitude: number): Promise<string> {
+  const url = new URL("https://nominatim.openstreetmap.org/reverse");
+  url.searchParams.set("format", "jsonv2");
+  url.searchParams.set("lat", String(latitude));
+  url.searchParams.set("lon", String(longitude));
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Could not detect your location.");
+  }
+
+  const data = await response.json() as { display_name?: string };
+  return data.display_name || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+}
+
 export default function CheckInPage() {
+  const navigate = useNavigate();
   const location = useLocation();
   const user = getStoredUser();
   const displayName = getUserDisplayName(user);
@@ -17,6 +38,7 @@ export default function CheckInPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [confirmedCode, setConfirmedCode] = useState("");
+  const [locationStatus, setLocationStatus] = useState("Detecting your current location...");
   const hasPayload = Boolean(payload);
   const canSubmit = Boolean(user && hasPayload && !loading);
   const currentCheckInPath = `${location.pathname}${location.search}`;
@@ -30,7 +52,61 @@ export default function CheckInPage() {
     }
 
     sessionStorage.setItem("pendingCheckInPath", currentCheckInPath);
+    localStorage.setItem("pendingCheckInPath", currentCheckInPath);
   }, [currentCheckInPath, hasPayload]);
+
+  useEffect(() => {
+    const pendingPath = sessionStorage.getItem("pendingCheckInPath") || localStorage.getItem("pendingCheckInPath");
+    if (hasPayload || !pendingPath) {
+      return;
+    }
+
+    if (pendingPath && pendingPath !== currentCheckInPath) {
+      navigate(pendingPath, { replace: true });
+    }
+  }, [currentCheckInPath, hasPayload, navigate]);
+
+  useEffect(() => {
+    if (!hasPayload || locationNote || !navigator.geolocation) {
+      if (!navigator.geolocation) {
+        setLocationStatus("Location detection is unavailable in this browser.");
+      }
+      return;
+    }
+
+    let cancelled = false;
+
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        try {
+          const detectedLocation = await reverseGeocode(coords.latitude, coords.longitude);
+          if (!cancelled) {
+            setLocationNote(detectedLocation);
+            setLocationStatus("Current location detected automatically.");
+          }
+        } catch {
+          if (!cancelled) {
+            setLocationNote(`${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`);
+            setLocationStatus("Using your device coordinates for this check-in.");
+          }
+        }
+      },
+      () => {
+        if (!cancelled) {
+          setLocationStatus("Allow location access to attach your current location automatically.");
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 60000,
+      }
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hasPayload, locationNote]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -72,6 +148,8 @@ export default function CheckInPage() {
       setSuccess(
         result.message || `You have been marked attended for event code ${normalizedEventCode}.`
       );
+      sessionStorage.removeItem("pendingCheckInPath");
+      localStorage.removeItem("pendingCheckInPath");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Check-in failed.");
     } finally {
@@ -161,6 +239,12 @@ export default function CheckInPage() {
                 disabled={!hasPayload}
               />
             </label>
+
+            {hasPayload && (
+              <div className="user-note">
+                {locationStatus}
+              </div>
+            )}
 
             {!payload && (
               <div className="user-note">

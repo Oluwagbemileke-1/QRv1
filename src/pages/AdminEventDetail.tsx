@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
+import QRCode from "qrcode";
 import { logout, getStoredUser, getUserDisplayName, listUsers, type UserProfile } from "../api/auth";
 import {
   getEventDetail, generateEventQr, getEventAttendees, updateEvent,
@@ -326,8 +327,8 @@ export default function AdminEventDetail() {
   const handleGenerateQr = async (reason: "manual" | "expired" | "scanned" = "manual") => {
     if (!eventId || !event) return;
 
-    if (event.status.toLowerCase() === "past" || event.status.toLowerCase() === "deleted") {
-      setQrError("You cannot generate a QR code for a past or deleted event.");
+    if (event.status.toLowerCase() !== "active") {
+      setQrError("QR generation is only available while the event is active.");
       setQrData(null);
       clearQrTimers();
       return;
@@ -342,6 +343,7 @@ export default function AdminEventDetail() {
     setQrError(reason === "manual" ? "" : qrError);
     try {
       let imageUrl = "";
+      let backendImageUrl = "";
       let expiresAt = "";
       let generatedAt = "";
       let checkInUrl = "";
@@ -350,20 +352,41 @@ export default function AdminEventDetail() {
 
       try {
         const res = await generateEventQr(eventId);
-        imageUrl = res.data?.imageUrl || "";
+        backendImageUrl = res.data?.imageUrl || "";
+        imageUrl = backendImageUrl;
         expiresAt = res.data?.expiresAt || "";
         generatedAt = res.data?.generatedAt || "";
         payload = res.payload || "";
         eventCode = res.event_code || event.event_code;
         checkInUrl = buildCheckInUrl(payload, eventCode, res.check_in_url);
+        if (checkInUrl) {
+          imageUrl = await QRCode.toDataURL(checkInUrl, {
+            width: 720,
+            margin: 1,
+            errorCorrectionLevel: "M",
+          });
+        }
       } catch {
         const fallback = await generateQr(eventId, event.event_code);
-        imageUrl = fallback.imageUrl;
+        backendImageUrl = fallback.imageUrl;
+        imageUrl = backendImageUrl;
         expiresAt = fallback.expiresAt;
         generatedAt = fallback.generatedAt;
         payload = fallback.payload || "";
         eventCode = event.event_code;
         checkInUrl = buildCheckInUrl(payload, eventCode);
+      }
+
+      if (checkInUrl) {
+        try {
+          imageUrl = await QRCode.toDataURL(checkInUrl, {
+            width: 720,
+            margin: 1,
+            errorCorrectionLevel: "M",
+          });
+        } catch {
+          imageUrl = backendImageUrl;
+        }
       }
 
       if (!imageUrl || !expiresAt) {
@@ -635,13 +658,13 @@ export default function AdminEventDetail() {
             <button
               className="adm-btn adm-btn--primary"
               onClick={() => void handleGenerateQr("manual")}
-              disabled={qrLoading || event.status.toLowerCase() === "past" || event.status.toLowerCase() === "deleted"}
+              disabled={qrLoading || event.status.toLowerCase() !== "active"}
             >
               {qrLoading ? "Generating..." : qrData ? "Regenerate QR" : "Generate QR"}
             </button>
-            {(event.status.toLowerCase() === "past" || event.status.toLowerCase() === "deleted") && (
+            {event.status.toLowerCase() !== "active" && (
               <p style={{ color: "#fca5a5", fontSize: 12, marginTop: 10 }}>
-                QR generation is disabled for past or deleted events.
+                QR generation is only enabled when this event becomes active.
               </p>
             )}
 

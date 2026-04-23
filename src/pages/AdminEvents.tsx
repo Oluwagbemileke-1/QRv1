@@ -7,6 +7,60 @@ import {
 } from "../api/events";
 import "./AdminLayout.css";
 
+interface LocationSuggestion {
+  place_id: number;
+  display_name: string;
+  lat: string;
+  lon: string;
+}
+
+async function searchLocations(query: string): Promise<LocationSuggestion[]> {
+  const url = new URL("https://nominatim.openstreetmap.org/search");
+  url.searchParams.set("q", query);
+  url.searchParams.set("format", "jsonv2");
+  url.searchParams.set("limit", "5");
+  url.searchParams.set("countrycodes", "ng");
+  url.searchParams.set("bounded", "1");
+  url.searchParams.set("viewbox", "2.6680,13.8920,14.6780,4.2400");
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Could not search locations right now.");
+  }
+
+  return await response.json() as LocationSuggestion[];
+}
+
+async function reverseGeocode(latitude: number, longitude: number): Promise<LocationSuggestion> {
+  const url = new URL("https://nominatim.openstreetmap.org/reverse");
+  url.searchParams.set("lat", String(latitude));
+  url.searchParams.set("lon", String(longitude));
+  url.searchParams.set("format", "jsonv2");
+
+  const response = await fetch(url.toString(), {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Could not verify your current location.");
+  }
+
+  const data = await response.json() as { place_id?: number; display_name?: string; lat?: string; lon?: string };
+  return {
+    place_id: data.place_id || 0,
+    display_name: data.display_name || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+    lat: data.lat || String(latitude),
+    lon: data.lon || String(longitude),
+  };
+}
+
 function AdminHeader({ onLogout, user }: { onLogout: () => void; user: ReturnType<typeof getStoredUser> }) {
   const displayName = getUserDisplayName(user);
 
@@ -58,6 +112,10 @@ export default function AdminEvents() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState("");
   const [formLoading, setFormLoading] = useState(false);
+  const [locationQuery, setLocationQuery] = useState("");
+  const [locationMatches, setLocationMatches] = useState<LocationSuggestion[]>([]);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -72,16 +130,114 @@ export default function AdminEvents() {
 
   useEffect(() => { load(); }, [load]);
 
+  const closeCreateModal = () => {
+    setShowCreate(false);
+    setForm(EMPTY_FORM);
+    setFormError("");
+    setLocationQuery("");
+    setLocationMatches([]);
+    setLocationError("");
+  };
+
+  useEffect(() => {
+    if (!showCreate) {
+      return;
+    }
+
+    const query = locationQuery.trim();
+    if (query.length < 3) {
+      setLocationMatches([]);
+      setLocationError("");
+      return;
+    }
+
+    let cancelled = false;
+    setLocationLoading(true);
+    setLocationError("");
+
+    const timer = window.setTimeout(() => {
+      searchLocations(query)
+        .then((results) => {
+          if (!cancelled) {
+            setLocationMatches(results);
+          }
+        })
+        .catch((err: Error) => {
+          if (!cancelled) {
+            setLocationMatches([]);
+            setLocationError(err.message || "Could not search locations.");
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setLocationLoading(false);
+          }
+        });
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [locationQuery, showCreate]);
+
   const handleLogout = async () => { await logout(); navigate("/login"); };
+
+  const applyLocationSuggestion = (suggestion: LocationSuggestion) => {
+    setForm((current) => ({
+      ...current,
+      location_name: suggestion.display_name,
+      latitude: Number(suggestion.lat),
+      longitude: Number(suggestion.lon),
+    }));
+    setLocationQuery(suggestion.display_name);
+    setLocationMatches([]);
+    setLocationError("");
+  };
+
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError("Location detection is unavailable in this browser.");
+      return;
+    }
+
+    setLocationLoading(true);
+    setLocationError("");
+
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        try {
+          const suggestion = await reverseGeocode(coords.latitude, coords.longitude);
+          applyLocationSuggestion(suggestion);
+        } catch (err) {
+          setLocationError(err instanceof Error ? err.message : "Could not verify your current location.");
+        } finally {
+          setLocationLoading(false);
+        }
+      },
+      () => {
+        setLocationLoading(false);
+        setLocationError("Allow location access to use your current location.");
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 60000,
+      }
+    );
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormLoading(true);
     setFormError("");
     try {
+      if (form.location_name && (form.latitude == null || form.longitude == null)) {
+        throw new Error("Select a real location suggestion or use your current location so latitude and longitude are saved.");
+      }
+
       await createEvent(form);
-      setShowCreate(false);
-      setForm(EMPTY_FORM);
+      closeCreateModal();
       load();
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : "Failed to create event.");
@@ -225,7 +381,7 @@ export default function AdminEvents() {
 
       {/* Create Event Modal */}
       {showCreate && (
-        <div className="adm-modal-overlay" onClick={() => setShowCreate(false)}>
+        <div className="adm-modal-overlay" onClick={closeCreateModal}>
           <div className="adm-modal" onClick={(e) => e.stopPropagation()}>
             <h2 className="adm-modal-title">Create Event</h2>
             <form onSubmit={handleCreate}>
@@ -248,8 +404,52 @@ export default function AdminEvents() {
                 </div>
                 <div className="adm-field">
                   <label className="adm-label">Location</label>
-                  <input className="adm-input" placeholder="Venue name"
-                    value={form.location_name} onChange={(e) => setForm({ ...form, location_name: e.target.value })} />
+                  <div className="adm-location-wrap">
+                    <input
+                      className="adm-input"
+                      placeholder="Search for a real venue or address"
+                      value={locationQuery}
+                      onChange={(e) => {
+                        const nextValue = e.target.value;
+                        setLocationQuery(nextValue);
+                        setLocationError("");
+                        setForm((current) => ({
+                          ...current,
+                          location_name: nextValue,
+                          latitude: null,
+                          longitude: null,
+                        }));
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="adm-btn adm-btn--ghost adm-btn--sm"
+                      onClick={handleUseCurrentLocation}
+                      disabled={locationLoading}
+                    >
+                      {locationLoading ? "Finding..." : "Use current location"}
+                    </button>
+                    {locationError && <p className="adm-location-help adm-location-help--error">{locationError}</p>}
+                    {!locationError && (
+                      <p className="adm-location-help">
+                        Pick a matching place so the event keeps a verified location and coordinates.
+                      </p>
+                    )}
+                    {locationMatches.length > 0 && (
+                      <div className="adm-location-results">
+                        {locationMatches.map((suggestion) => (
+                          <button
+                            key={suggestion.place_id}
+                            type="button"
+                            className="adm-location-option"
+                            onClick={() => applyLocationSuggestion(suggestion)}
+                          >
+                            {suggestion.display_name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="adm-field-row">
@@ -277,7 +477,7 @@ export default function AdminEvents() {
                 </div>
               </div>
               <div className="adm-modal-actions">
-                <button type="button" className="adm-btn adm-btn--ghost" onClick={() => setShowCreate(false)}>
+                <button type="button" className="adm-btn adm-btn--ghost" onClick={closeCreateModal}>
                   Cancel
                 </button>
                 <button type="submit" className="adm-btn adm-btn--primary" disabled={formLoading}>

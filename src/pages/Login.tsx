@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
-import { login, persistAuthSession, saveUserIdentityFallback } from "../api/auth";
+import { getStoredUser, isAuthenticated, login, persistAuthSession, saveUserIdentityFallback } from "../api/auth";
 import { getAllEvents } from "../api/events";
 import "./Auth.css";
 
@@ -28,8 +28,23 @@ export default function Login() {
       return `/check-in?${checkInParams.toString()}`;
     }
 
-    return sessionStorage.getItem("pendingCheckInPath") || "";
+    return sessionStorage.getItem("pendingCheckInPath") || localStorage.getItem("pendingCheckInPath") || "";
   }, [location.search]);
+
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      return;
+    }
+
+    if (nextPath) {
+      navigate(nextPath, { replace: true });
+      return;
+    }
+
+    const existingUser = getStoredUser();
+    const isAdmin = existingUser?.role === "admin" || existingUser?.is_staff || existingUser?.is_superuser;
+    navigate(isAdmin ? "/admin/dashboard" : "/dashboard", { replace: true });
+  }, [navigate, nextPath]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -51,6 +66,7 @@ export default function Login() {
 
       if (nextPath) {
         sessionStorage.removeItem("pendingCheckInPath");
+        localStorage.removeItem("pendingCheckInPath");
         navigate(nextPath);
         return;
       }
