@@ -240,6 +240,44 @@ function readBoolean(value: unknown): boolean | undefined {
   return typeof value === "boolean" ? value : undefined;
 }
 
+function isAdminUser(user?: Partial<AuthUser> | null): boolean {
+  return user?.role === "admin" || user?.is_staff === true || user?.is_superuser === true;
+}
+
+function resolveRole(
+  candidateRole: unknown,
+  candidateIsStaff: unknown,
+  candidateIsSuperuser: unknown,
+  claims: Record<string, unknown> | null,
+  existingUser?: Partial<AuthUser> | null
+): "user" | "admin" {
+  if (candidateRole === "admin" || candidateRole === "user") {
+    if (candidateRole === "admin") {
+      return "admin";
+    }
+
+    if (readBoolean(candidateIsStaff) === true || readBoolean(candidateIsSuperuser) === true) {
+      return "admin";
+    }
+
+    if (isAdminUser(existingUser)) {
+      return "admin";
+    }
+
+    return "user";
+  }
+
+  if (readBoolean(candidateIsStaff) === true || readBoolean(candidateIsSuperuser) === true) {
+    return "admin";
+  }
+
+  if (isAdminUser(existingUser)) {
+    return "admin";
+  }
+
+  return inferRoleFromClaims(claims);
+}
+
 function normalizeUser(data: AuthResponse): AuthUser | null {
   const directUser = data.user;
   const nestedUser = data.data?.user;
@@ -250,9 +288,13 @@ function normalizeUser(data: AuthResponse): AuthUser | null {
   const candidate = directUser || nestedUser || flatData;
   const token = getAuthToken(data);
   const claims = decodeJwtPayload(token);
+  const existingUser = getStoredUser();
   const phoneFromFlatData = flatData ? readString((flatData as Partial<AuthUser>).phone) : "";
 
   if (candidate) {
+    const nextIsStaff = readBoolean(candidate.is_staff);
+    const nextIsSuperuser = readBoolean(candidate.is_superuser);
+
     return {
       ...candidate,
       id: coerceNumericId(candidate.id) || readUserIdFromClaims(claims),
@@ -261,13 +303,14 @@ function normalizeUser(data: AuthResponse): AuthUser | null {
       first_name: readString(candidate.first_name),
       last_name: readString(candidate.last_name),
       phone: readString(candidate.phone),
-      role:
-        candidate.role ||
-        (candidate.is_superuser || candidate.is_staff ? "admin" : inferRoleFromClaims(claims)),
-      is_staff: readBoolean(candidate.is_staff),
-      is_superuser: readBoolean(candidate.is_superuser),
+      role: resolveRole(candidate.role, candidate.is_staff, candidate.is_superuser, claims, existingUser),
+      is_staff: nextIsStaff ?? existingUser?.is_staff,
+      is_superuser: nextIsSuperuser ?? existingUser?.is_superuser,
     };
   }
+
+  const fallbackIsStaff = data.is_staff ?? (claims?.is_staff === true ? true : existingUser?.is_staff);
+  const fallbackIsSuperuser = data.is_superuser ?? (claims?.is_superuser === true ? true : existingUser?.is_superuser);
 
   return {
     id: readUserIdFromClaims(claims),
@@ -293,9 +336,9 @@ function normalizeUser(data: AuthResponse): AuthUser | null {
       data.phone ||
       phoneFromFlatData ||
       "",
-    role: data.role || (data.is_superuser || data.is_staff ? "admin" : inferRoleFromClaims(claims)),
-    is_staff: data.is_staff ?? (claims?.is_staff === true),
-    is_superuser: data.is_superuser ?? (claims?.is_superuser === true),
+    role: resolveRole(data.role, fallbackIsStaff, fallbackIsSuperuser, claims, existingUser),
+    is_staff: fallbackIsStaff,
+    is_superuser: fallbackIsSuperuser,
   };
 }
 
@@ -487,7 +530,13 @@ export async function refreshStoredUserProfile(): Promise<AuthUser> {
     first_name: readString(responseUser?.first_name) || response.first_name || currentUser.first_name,
     last_name: readString(responseUser?.last_name) || response.last_name || currentUser.last_name,
     phone: readString(responseUser?.phone) || response.phone || currentUser.phone,
-    role: (responseUser?.role === "admin" || responseUser?.role === "user" ? responseUser.role : response.role) || currentUser.role,
+    role: resolveRole(
+      responseUser?.role === "admin" || responseUser?.role === "user" ? responseUser.role : response.role,
+      readBoolean(responseUser?.is_staff) ?? response.is_staff,
+      readBoolean(responseUser?.is_superuser) ?? response.is_superuser,
+      null,
+      currentUser
+    ),
     is_staff: readBoolean(responseUser?.is_staff) ?? response.is_staff ?? currentUser.is_staff,
     is_superuser: readBoolean(responseUser?.is_superuser) ?? response.is_superuser ?? currentUser.is_superuser,
   };
