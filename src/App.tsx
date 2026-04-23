@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import VerifyEmail from "./pages/VerifyEmail";
@@ -14,11 +14,28 @@ import AdminEventSection from "./pages/AdminEventSection";
 import AdminUsers from "./pages/AdminUsers";
 import ProtectedRoute from "./components/ProtectedRoute";
 
+function ScanAwareRedirect({ fallbackTo }: { fallbackTo: string }) {
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const payload = params.get("payload") || "";
+  const eventCode = params.get("event_code") || params.get("code") || "";
+
+  if (payload) {
+    const nextParams = new URLSearchParams({ payload });
+    if (eventCode) {
+      nextParams.set("event_code", eventCode);
+    }
+    return <Navigate to={`/check-in?${nextParams.toString()}`} replace />;
+  }
+
+  return <Navigate to={fallbackTo} replace />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<ScanAwareRedirect fallbackTo="/login" />} />
 
         {/* ── Public ── */}
         <Route path="/login" element={<Login />} />
@@ -30,6 +47,9 @@ export default function App() {
         <Route path="/dashboard" element={<ProtectedRoute requiredRole="user"><Dashboard /></ProtectedRoute>} />
         <Route path="/attendance" element={<ProtectedRoute requiredRole="user"><AttendancePage /></ProtectedRoute>} />
         <Route path="/check-in" element={<CheckInPage />} />
+        <Route path="/checkin" element={<ScanAwareRedirect fallbackTo="/check-in" />} />
+        <Route path="/check_in" element={<ScanAwareRedirect fallbackTo="/check-in" />} />
+        <Route path="/event-check-in" element={<ScanAwareRedirect fallbackTo="/check-in" />} />
         <Route path="/profile" element={<ProtectedRoute requiredRole="user"><ProfilePage /></ProtectedRoute>} />
 
         {/* ── Admin routes ── */}
@@ -41,7 +61,7 @@ export default function App() {
         <Route path="/admin/fraud" element={<ProtectedRoute requiredRole="admin"><AdminEventSection section="fraud" /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
 
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<ScanAwareRedirect fallbackTo="/login" />} />
       </Routes>
     </BrowserRouter>
   );
