@@ -597,7 +597,7 @@ def allevents(request):
     events = Event.objects.all() if request.user.is_superuser else Event.objects.filter(created_by=request.user)
     search = request.GET.get('search')
     if search:
-        events = Event.objects.filter(
+        events = events.filter(
             Q(title__icontains=search) |
             Q(description__icontains=search)
         )
@@ -619,6 +619,8 @@ def allevents(request):
                 "past": past,
             }
             events = status_map[status_filter]
+    if hasattr(events, "order_by"):
+        events = events.order_by("-date", "-created_at", "-id")
     paginator = PageNumberPagination()
     result_page = paginator.paginate_queryset(events, request)
     serializer = AllSerializer(result_page, many=True)

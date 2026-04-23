@@ -3,7 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from .serializers import RegisterSerializer, UserSerializer, ChangePasswordSerializer, AdminUserSerializer, UpdateSerializer,AdminSerializer, ForgotPasswordSerializer,VerifyOTPSerializer,ResetPasswordSerializer,ResendOTPSerializer
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import update_last_login
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -261,7 +261,7 @@ def login(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def logout(request):
     refresh_token = request.data.get("refresh") 
 
