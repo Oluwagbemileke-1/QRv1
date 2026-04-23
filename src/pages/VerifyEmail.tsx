@@ -1,14 +1,22 @@
 import { useEffect, useState } from "react";
-import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
+import { useParams, Link, useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { verifyEmail, resendVerificationEmail } from "../api/auth";
 import "./Auth.css";
 
 type State = "pending" | "loading" | "success" | "already" | "expired" | "used" | "invalid";
 
 export default function VerifyEmail() {
-  const { token } = useParams<{ token: string }>();
+  const { token: routeToken } = useParams<{ token: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
+  const token = routeToken || (() => {
+    const prefix = "/verify-email/";
+    if (!location.pathname.startsWith(prefix)) {
+      return "";
+    }
+    return decodeURIComponent(location.pathname.slice(prefix.length)).replace(/\/+$/, "");
+  })();
   const initialEmail = searchParams.get("email") || "";
   const nextPath = searchParams.get("next") || "";
   const [state, setState] = useState<State>(token ? "loading" : "pending");
