@@ -31,10 +31,21 @@ function ScanAwareRedirect({ fallbackTo }: { fallbackTo: string }) {
   return <Navigate to={fallbackTo} replace />;
 }
 
+function AppFallback({ fallbackTo }: { fallbackTo: string }) {
+  const location = useLocation();
+
+  if (location.pathname === "/verify-email" || location.pathname.startsWith("/verify-email/")) {
+    return <VerifyEmail />;
+  }
+
+  return <ScanAwareRedirect fallbackTo={fallbackTo} />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Route table kept explicit so static-host deep links stay predictable. */}
         <Route path="/" element={<ScanAwareRedirect fallbackTo="/login" />} />
 
         {/* ── Public ── */}
@@ -61,7 +72,7 @@ export default function App() {
         <Route path="/admin/fraud" element={<ProtectedRoute requiredRole="admin"><AdminEventSection section="fraud" /></ProtectedRoute>} />
         <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
 
-        <Route path="*" element={<ScanAwareRedirect fallbackTo="/login" />} />
+        <Route path="*" element={<AppFallback fallbackTo="/login" />} />
       </Routes>
     </BrowserRouter>
   );
