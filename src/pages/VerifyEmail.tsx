@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link, useSearchParams } from "react-router-dom";
+import { useParams, Link, useSearchParams, useNavigate } from "react-router-dom";
 import { verifyEmail, resendVerificationEmail } from "../api/auth";
 import "./Auth.css";
 
@@ -7,6 +7,7 @@ type State = "pending" | "loading" | "success" | "already" | "expired" | "used" 
 
 export default function VerifyEmail() {
   const { token } = useParams<{ token: string }>();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialEmail = searchParams.get("email") || "";
   const nextPath = searchParams.get("next") || "";
@@ -16,6 +17,7 @@ export default function VerifyEmail() {
   const [resendMsg, setResendMsg] = useState("");
   const [resendError, setResendError] = useState("");
   const [serverMessage, setServerMessage] = useState("");
+  const loginTarget = nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : "/login";
 
   useEffect(() => {
     if (initialEmail) {
@@ -58,6 +60,18 @@ export default function VerifyEmail() {
       });
   }, [token]);
 
+  useEffect(() => {
+    if (state !== "success" && state !== "already") {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      navigate(loginTarget, { replace: true });
+    }, 5000);
+
+    return () => window.clearTimeout(timer);
+  }, [state, navigate, loginTarget]);
+
   const handleResend = async (e: React.FormEvent) => {
     e.preventDefault();
     setResendLoading(true);
@@ -73,8 +87,6 @@ export default function VerifyEmail() {
       setResendLoading(false);
     }
   };
-
-  const loginTarget = nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : "/login";
 
   return (
     <div className="auth-wrapper">
@@ -93,8 +105,7 @@ export default function VerifyEmail() {
             </div>
             <h2 className="verify-title">Check your email</h2>
             <p className="verify-sub">
-              We sent a verification link{email ? ` to ${email}` : ""}. Your account should only be usable after
-              you open that link and verify your email.
+              An email has been sent{email ? ` to ${email}` : ""}. Verify your account from that message to continue.
             </p>
 
             {resendMsg ? (
@@ -157,8 +168,10 @@ export default function VerifyEmail() {
                 />
               </svg>
             </div>
-            <h2 className="verify-title">Email verified!</h2>
-            <p className="verify-sub">{serverMessage || "Your account is now active. You can sign in."}</p>
+            <h2 className="verify-title">Email verified</h2>
+            <p className="verify-sub">
+              {serverMessage || "Your account is now active."} You will be redirected to login in 5 seconds.
+            </p>
             <Link
               to={loginTarget}
               className="auth-btn"
@@ -178,7 +191,9 @@ export default function VerifyEmail() {
               </svg>
             </div>
             <h2 className="verify-title">Already verified</h2>
-            <p className="verify-sub">{serverMessage || "This email is already verified. You can log in now."}</p>
+            <p className="verify-sub">
+              {serverMessage || "This email is already verified. You can log in now."} You will be redirected to login in 5 seconds.
+            </p>
             <Link
               to={loginTarget}
               className="auth-btn"

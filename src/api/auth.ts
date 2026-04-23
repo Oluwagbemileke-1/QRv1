@@ -80,20 +80,14 @@ async function requestTokenRefresh(): Promise<string | null> {
     return null;
   }
 
-  const endpoints = [`${BASE_URL}/token/refresh/`, `${BASE_URL}/users/token/refresh/`];
+  try {
+    const res = await fetch(`${BASE_URL}/token/refresh/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh }),
+    });
 
-  for (const endpoint of endpoints) {
-    try {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh }),
-      });
-
-      if (!res.ok) {
-        continue;
-      }
-
+    if (res.ok) {
       const data = await res.json().catch(() => null) as { access?: string } | null;
       const access = data?.access || "";
 
@@ -101,9 +95,9 @@ async function requestTokenRefresh(): Promise<string | null> {
         localStorage.setItem("token", access);
         return access;
       }
-    } catch {
-      continue;
     }
+  } catch {
+    // Fall through to session cleanup below.
   }
 
   localStorage.removeItem("token");
@@ -375,9 +369,18 @@ export async function login(payload: LoginPayload): Promise<AuthResponse> {
 }
 
 export async function logout(): Promise<void> {
-  await authorizedFetch(`${BASE_URL}/users/logout/`, {
-    method: "POST",
-  });
+  const refresh = getStoredRefreshToken();
+
+  if (refresh) {
+    try {
+      await authorizedFetch(`${BASE_URL}/users/logout/`, {
+        method: "POST",
+        body: JSON.stringify({ refresh }),
+      });
+    } catch {
+      // Always clear the local session even if the backend logout request fails.
+    }
+  }
 
   localStorage.removeItem("token");
   localStorage.removeItem("refresh");

@@ -1126,7 +1126,7 @@ export default function AdminEventDetail() {
           <>
             <div className="adm-hero">
               <h2 className="adm-title">Analytics</h2>
-              <p className="adm-sub">Scan data from the .NET API for this event.</p>
+              
             </div>
             {statsError && <div className="adm-error">{statsError}</div>}
             {scansError && <div className="adm-error">{scansError}</div>}
