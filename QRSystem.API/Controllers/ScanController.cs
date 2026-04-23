@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using QRSystem.API.Core.Constants;
 using QRSystem.API.Core.DTOs;
 using QRSystem.API.Core.Models;
 using QRSystem.API.Services.Interfaces;
@@ -47,13 +48,13 @@ namespace QRSystem.API.Controllers
                     longitude: request.Longitude
                 );
 
-                if (result.Result == Core.Constants.ScanResults.Success)
+                if (result.Result == ScanResults.Success)
                 {
                     _logger.LogInformation("Scan successful for Username: {Username}", request.Username);
                     return Ok(GenericResponse<object>.Success(result, result.Message));
                 }
 
-                if (result.Result == Core.Constants.ScanResults.Fraud)
+                if (result.Result == ScanResults.Fraud)
                 {
                     _logger.LogWarning("Fraudulent scan detected for Username: {Username}, IP: {IpAddress}", request.Username, ipAddress);
                     return StatusCode(403, GenericResponse<object>.Failure(result.Message, "403"));
