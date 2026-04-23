@@ -69,11 +69,14 @@ def validate_qr_code(qr_data, username, event_code):
             data = {}
 
         result = data.get('data', {}) if isinstance(data, dict) else {}
+        if not isinstance(result, dict):
+            result = {}
         scan_result = result.get('result')
+        if scan_result is None and isinstance(data, dict):
+            scan_result = data.get('result')
         message = 'API error'
         if isinstance(data, dict):
             message = result.get('message') or data.get('message') or data.get('error') or 'API error'
-
         if response.status_code == 200:
             if scan_result == 'Success':
                 return {'valid': True, 'fraud_detected': False, 'message': message or 'Scan successful'}
