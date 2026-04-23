@@ -71,6 +71,27 @@ export interface UserEventGroups {
   active: Event[];
   past: Event[];
 }
+
+function normalizeEventGroups(payload: unknown): UserEventGroups {
+  const root = payload && typeof payload === "object" ? payload as Record<string, unknown> : {};
+  const data = root.data && typeof root.data === "object" ? root.data as Record<string, unknown> : root;
+
+  const readEvents = (...keys: string[]) => {
+    for (const key of keys) {
+      const value = data[key] ?? root[key];
+      if (Array.isArray(value)) {
+        return value as Event[];
+      }
+    }
+    return [] as Event[];
+  };
+
+  return {
+    active: readEvents("active", "active_events", "activeEvents"),
+    upcoming: readEvents("upcoming", "upcoming_events", "upcomingEvents"),
+    past: readEvents("past", "past_events", "pastEvents", "previous"),
+  };
+}
  
 // ── Helpers ────────────────────────────────────────────────────────────────
  
@@ -218,6 +239,7 @@ export async function getMyEvents(params?: {
   if (params?.search) p.set("search", params.search);
   if (params?.date) p.set("date", params.date);
   const res = await authorizedFetch(`${BASE_URL}/events/my-events/${p.toString() ? `?${p}` : ""}`);
-  return handleResponse(res);
+  const payload = await handleResponse<unknown>(res);
+  return normalizeEventGroups(payload);
 }
  

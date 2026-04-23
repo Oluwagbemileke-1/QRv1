@@ -40,11 +40,13 @@ export interface AuthResponse {
     user?: AuthUser;
     access?: string;
     refresh?: string;
-  };
+  } & Record<string, unknown>;
   username?: string;
   email?: string;
   first_name?: string;
   last_name?: string;
+  phone?: string;
+  id?: number | string;
   role?: "user" | "admin";
   is_staff?: boolean;
   is_superuser?: boolean;
@@ -230,20 +232,40 @@ function readUserIdFromClaims(claims: Record<string, unknown> | null): number {
   );
 }
 
+function readString(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+function readBoolean(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined;
+}
+
 function normalizeUser(data: AuthResponse): AuthUser | null {
   const directUser = data.user;
   const nestedUser = data.data?.user;
-  const candidate = directUser || nestedUser;
+  const flatData =
+    data.data && typeof data.data === "object" && !Array.isArray(data.data)
+      ? data.data as Partial<AuthUser>
+      : null;
+  const candidate = directUser || nestedUser || flatData;
   const token = getAuthToken(data);
   const claims = decodeJwtPayload(token);
+  const phoneFromFlatData = flatData ? readString((flatData as Partial<AuthUser>).phone) : "";
 
   if (candidate) {
     return {
       ...candidate,
-      id: candidate.id || readUserIdFromClaims(claims),
+      id: coerceNumericId(candidate.id) || readUserIdFromClaims(claims),
+      username: readString(candidate.username),
+      email: readString(candidate.email),
+      first_name: readString(candidate.first_name),
+      last_name: readString(candidate.last_name),
+      phone: readString(candidate.phone),
       role:
         candidate.role ||
         (candidate.is_superuser || candidate.is_staff ? "admin" : inferRoleFromClaims(claims)),
+      is_staff: readBoolean(candidate.is_staff),
+      is_superuser: readBoolean(candidate.is_superuser),
     };
   }
 
@@ -266,6 +288,10 @@ function normalizeUser(data: AuthResponse): AuthUser | null {
     last_name:
       data.last_name ||
       (typeof claims?.last_name === "string" ? claims.last_name : "") ||
+      "",
+    phone:
+      data.phone ||
+      phoneFromFlatData ||
       "",
     role: data.role || (data.is_superuser || data.is_staff ? "admin" : inferRoleFromClaims(claims)),
     is_staff: data.is_staff ?? (claims?.is_staff === true),
@@ -438,19 +464,32 @@ export async function refreshStoredUserProfile(): Promise<AuthUser> {
   }
 
   const response = await getUserDetail(currentUser.id);
-  const responseUser = response.user || response.data?.user;
+  const responseData =
+    response.data && typeof response.data === "object" && !Array.isArray(response.data)
+      ? response.data as Record<string, unknown>
+      : null;
+  const responseUser =
+    response.user ||
+    (
+      responseData?.user &&
+      typeof responseData.user === "object" &&
+      !Array.isArray(responseData.user)
+        ? responseData.user as Record<string, unknown>
+        : null
+    ) ||
+    responseData;
   const nextUser: AuthUser = {
     ...currentUser,
     ...(responseUser || {}),
-    id: responseUser?.id || currentUser.id,
-    username: responseUser?.username || response.username || currentUser.username,
-    email: responseUser?.email || response.email || currentUser.email,
-    first_name: responseUser?.first_name || response.first_name || currentUser.first_name,
-    last_name: responseUser?.last_name || response.last_name || currentUser.last_name,
-    phone: responseUser?.phone ?? currentUser.phone,
-    role: responseUser?.role || response.role || currentUser.role,
-    is_staff: responseUser?.is_staff ?? response.is_staff ?? currentUser.is_staff,
-    is_superuser: responseUser?.is_superuser ?? response.is_superuser ?? currentUser.is_superuser,
+    id: coerceNumericId(responseUser?.id) || coerceNumericId(response.id) || currentUser.id,
+    username: readString(responseUser?.username) || response.username || currentUser.username,
+    email: readString(responseUser?.email) || response.email || currentUser.email,
+    first_name: readString(responseUser?.first_name) || response.first_name || currentUser.first_name,
+    last_name: readString(responseUser?.last_name) || response.last_name || currentUser.last_name,
+    phone: readString(responseUser?.phone) || response.phone || currentUser.phone,
+    role: (responseUser?.role === "admin" || responseUser?.role === "user" ? responseUser.role : response.role) || currentUser.role,
+    is_staff: readBoolean(responseUser?.is_staff) ?? response.is_staff ?? currentUser.is_staff,
+    is_superuser: readBoolean(responseUser?.is_superuser) ?? response.is_superuser ?? currentUser.is_superuser,
   };
 
   localStorage.setItem("user", JSON.stringify({
@@ -482,10 +521,12 @@ export async function updateMyProfile(payload: Partial<RegisterPayload>): Promis
   }
 
   const response = await updateUser(currentUser.id, payload);
+  const responseUser = normalizeUser(response);
   const mergedUser = {
     ...currentUser,
+    ...(responseUser || {}),
     ...payload,
-    phone: payload.phone ?? currentUser.phone,
+    phone: payload.phone ?? responseUser?.phone ?? currentUser.phone,
   };
   localStorage.setItem("user", JSON.stringify(mergedUser));
   return response;

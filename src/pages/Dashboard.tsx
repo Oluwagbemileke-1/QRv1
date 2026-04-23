@@ -32,6 +32,9 @@ export default function Dashboard() {
   const [attendance, setAttendance] = useState({ total: 0, attended: 0, missed: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [pendingCheckInPath] = useState(
+    () => sessionStorage.getItem("pendingCheckInPath") || localStorage.getItem("pendingCheckInPath") || ""
+  );
 
   useEffect(() => {
     if (isAdmin) {
@@ -80,9 +83,17 @@ export default function Dashboard() {
             Track invited events, see what you attended or missed, and use your event QR when it is time to check in.
           </p>
           <div className="dash-hero-actions">
-            <Link to="/attendance" className="dash-hero-btn dash-hero-btn--primary">Open attendance</Link>
+            {pendingCheckInPath ? (
+              <Link to={pendingCheckInPath} className="dash-hero-btn dash-hero-btn--primary">Continue check-in</Link>
+            ) : (
+              <Link to="/attendance" className="dash-hero-btn dash-hero-btn--primary">Open attendance</Link>
+            )}
             <Link to="/profile" className="dash-hero-btn dash-hero-btn--ghost">View profile</Link>
-            <span className="dash-hero-note">Check-in only works from a scanned event QR.</span>
+            <span className="dash-hero-note">
+              {pendingCheckInPath
+                ? "Your scanned event is ready. Continue to enter the event code."
+                : "Check-in only works from a scanned event QR."}
+            </span>
           </div>
         </section>
 
@@ -96,6 +107,10 @@ export default function Dashboard() {
           <div className="dash-stat dash-stat--blue">
             <span className="dash-stat-num">{loading ? "-" : events.active.length}</span>
             <span className="dash-stat-label">Active Now</span>
+          </div>
+          <div className="dash-stat">
+            <span className="dash-stat-num">{loading ? "-" : events.upcoming.length}</span>
+            <span className="dash-stat-label">Upcoming</span>
           </div>
           <div className="dash-stat dash-stat--green">
             <span className="dash-stat-num">{loading ? "-" : attendance.attended}</span>

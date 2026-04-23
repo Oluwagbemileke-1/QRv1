@@ -56,6 +56,27 @@ interface NetResponse<T> {
   data: T;
 }
 
+function normalizeNetError(error: unknown, fallback: string): Error {
+  if (error instanceof Error) {
+    if (error.message === "Failed to fetch") {
+      return new Error(fallback);
+    }
+
+    return error;
+  }
+
+  return new Error(fallback);
+}
+
+async function performNetFetch<T>(path: string, init: RequestInit, fallback: string): Promise<T> {
+  try {
+    const res = await fetch(buildNetUrl(path), init);
+    return await handleNetResponse<T>(res);
+  } catch (error) {
+    throw normalizeNetError(error, fallback);
+  }
+}
+
 function buildNetUrl(path: string): string {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
 
@@ -92,15 +113,18 @@ async function handleNetResponse<T>(res: Response): Promise<T> {
  * QR expires in 1 minute; if scanned it deactivates immediately.
  */
 export async function generateQr(eventId: string, eventCode: string): Promise<QrCodeData> {
-  const res = await fetch(buildNetUrl("/qr/generate"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      eventId,
-      eventCode,
-    }),
-  });
-  return handleNetResponse<QrCodeData>(res);
+  return performNetFetch<QrCodeData>(
+    "/qr/generate",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        eventId,
+        eventCode,
+      }),
+    },
+    "The QR service is currently unreachable."
+  );
 }
  
 // ── Scan / Analytics endpoints ─────────────────────────────────────────────
@@ -110,8 +134,11 @@ export async function generateQr(eventId: string, eventCode: string): Promise<Qr
  * All scan attempts (success + fraud + expired etc.)
  */
 export async function getAllScans(eventId: string): Promise<ScanAttempt[]> {
-  const res = await fetch(buildNetUrl(`/scan/event/${eventId}`));
-  return handleNetResponse<ScanAttempt[]>(res);
+  return performNetFetch<ScanAttempt[]>(
+    `/scan/event/${eventId}`,
+    {},
+    "The scan analytics service is currently unreachable."
+  );
 }
  
 /**
@@ -119,8 +146,11 @@ export async function getAllScans(eventId: string): Promise<ScanAttempt[]> {
  * Only users who successfully attended
  */
 export async function getSuccessfulScans(eventId: string): Promise<ScanAttempt[]> {
-  const res = await fetch(buildNetUrl(`/scan/event/${eventId}/successful`));
-  return handleNetResponse<ScanAttempt[]>(res);
+  return performNetFetch<ScanAttempt[]>(
+    `/scan/event/${eventId}/successful`,
+    {},
+    "The successful check-in service is currently unreachable."
+  );
 }
  
 /**
@@ -128,8 +158,11 @@ export async function getSuccessfulScans(eventId: string): Promise<ScanAttempt[]
  * Attendance count for dashboard stat card
  */
 export async function getAttendanceCount(eventId: string): Promise<{ eventId: string; attendanceCount: number }> {
-  const res = await fetch(buildNetUrl(`/scan/event/${eventId}/count`));
-  return handleNetResponse(res);
+  return performNetFetch<{ eventId: string; attendanceCount: number }>(
+    `/scan/event/${eventId}/count`,
+    {},
+    "The attendance count service is currently unreachable."
+  );
 }
  
 /**
@@ -137,8 +170,11 @@ export async function getAttendanceCount(eventId: string): Promise<{ eventId: st
  * Full analytics: totalScans, successfulScans, fraudAttempts, uniqueIps
  */
 export async function getEventStats(eventId: string): Promise<EventStats> {
-  const res = await fetch(buildNetUrl(`/scan/event/${eventId}/stats`));
-  return handleNetResponse<EventStats>(res);
+  return performNetFetch<EventStats>(
+    `/scan/event/${eventId}/stats`,
+    {},
+    "The scan analytics service is currently unreachable."
+  );
 }
  
 // ── Fraud endpoints ────────────────────────────────────────────────────────
@@ -148,8 +184,11 @@ export async function getEventStats(eventId: string): Promise<EventStats> {
  * All fraud logs for an event with reason + details
  */
 export async function getFraudLogs(eventId: string): Promise<FraudLog[]> {
-  const res = await fetch(buildNetUrl(`/fraud/event/${eventId}`));
-  return handleNetResponse<FraudLog[]>(res);
+  return performNetFetch<FraudLog[]>(
+    `/fraud/event/${eventId}`,
+    {},
+    "The fraud logs service is currently unreachable."
+  );
 }
  
 /**
@@ -157,8 +196,11 @@ export async function getFraudLogs(eventId: string): Promise<FraudLog[]> {
  * Total fraud count — used in dashboard stat card
  */
 export async function getFraudCount(eventId: string): Promise<{ eventId: string; fraudCount: number }> {
-  const res = await fetch(buildNetUrl(`/fraud/event/${eventId}/count`));
-  return handleNetResponse(res);
+  return performNetFetch<{ eventId: string; fraudCount: number }>(
+    `/fraud/event/${eventId}/count`,
+    {},
+    "The fraud count service is currently unreachable."
+  );
 }
 
 export async function submitScan(
@@ -167,15 +209,18 @@ export async function submitScan(
   eventCode?: string,
   location?: string
 ): Promise<ScanResponse> {
-  const res = await fetch(buildNetUrl("/scan"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      payload,
-      username,
-      eventCode: eventCode || "",
-      location: location || null,
-    }),
-  });
-  return handleNetResponse<ScanResponse>(res);
+  return performNetFetch<ScanResponse>(
+    "/scan",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        payload,
+        username,
+        eventCode: eventCode || "",
+        location: location || null,
+      }),
+    },
+    "The check-in service is currently unreachable."
+  );
 }

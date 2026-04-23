@@ -33,12 +33,8 @@ function TabBtn({ id, active, onClick, children }: { id: Tab; active: Tab; onCli
 }
 
 function buildCheckInUrl(payload: string, eventCode?: string, explicitUrl?: string | null): string {
-  if (explicitUrl) {
-    return explicitUrl;
-  }
-
   if (!payload || typeof window === "undefined") {
-    return "";
+    return explicitUrl || "";
   }
 
   const params = new URLSearchParams({ payload });

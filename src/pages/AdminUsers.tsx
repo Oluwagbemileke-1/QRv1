@@ -89,7 +89,7 @@ export default function AdminUsers() {
           <table className="adm-table">
             <thead>
               <tr>
-                <th className="adm-th">ID</th>
+                <th className="adm-th">No</th>
                 <th className="adm-th">Name</th>
                 <th className="adm-th">Username</th>
                 <th className="adm-th">Email</th>
@@ -108,9 +108,9 @@ export default function AdminUsers() {
               {!loading && users.length === 0 && (
                 <tr><td colSpan={6} className="adm-empty">No users found.</td></tr>
               )}
-              {!loading && users.map((u) => (
+              {!loading && users.map((u, index) => (
                 <tr key={u.id} className="adm-tr">
-                  <td className="adm-td adm-td--muted">{u.id}</td>
+                  <td className="adm-td adm-td--muted">{index + 1}</td>
                   <td className="adm-td adm-td--bold">{u.first_name} {u.last_name}</td>
                   <td className="adm-td adm-td--muted">{u.username}</td>
                   <td className="adm-td adm-td--muted">{u.email}</td>
