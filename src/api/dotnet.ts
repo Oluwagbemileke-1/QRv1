@@ -58,6 +58,10 @@ interface NetResponse<T> {
 
 function normalizeNetError(error: unknown, fallback: string): Error {
   if (error instanceof Error) {
+    if (error.name === "AbortError") {
+      return new Error("The check-in request took too long. Please try again.");
+    }
+
     if (error.message === "Failed to fetch") {
       return new Error(fallback);
     }
@@ -69,11 +73,19 @@ function normalizeNetError(error: unknown, fallback: string): Error {
 }
 
 async function performNetFetch<T>(path: string, init: RequestInit, fallback: string): Promise<T> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 20000);
+
   try {
-    const res = await fetch(buildNetUrl(path), init);
+    const res = await fetch(buildNetUrl(path), {
+      ...init,
+      signal: controller.signal,
+    });
     return await handleNetResponse<T>(res);
   } catch (error) {
     throw normalizeNetError(error, fallback);
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
@@ -207,7 +219,9 @@ export async function submitScan(
   payload: string,
   username: string,
   eventCode?: string,
-  location?: string
+  location?: string,
+  latitude?: number,
+  longitude?: number
 ): Promise<ScanResponse> {
   return performNetFetch<ScanResponse>(
     "/scan",
@@ -219,8 +233,10 @@ export async function submitScan(
         username,
         eventCode: eventCode || "",
         location: location || null,
+        latitude: latitude ?? null,
+        longitude: longitude ?? null,
       }),
     },
-    "The check-in service is currently unreachable."
+    "The check-in service is currently unreachable from this browser right now."
   );
 }

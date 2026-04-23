@@ -34,11 +34,12 @@ export default function CheckInPage() {
   const linkedCode = params.get("event_code") || params.get("code") || "";
   const [eventCode, setEventCode] = useState(linkedCode);
   const [locationNote, setLocationNote] = useState("");
+  const [coordinates, setCoordinates] = useState<{ latitude?: number; longitude?: number }>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [confirmedCode, setConfirmedCode] = useState("");
-  const [locationStatus, setLocationStatus] = useState("Detecting your current location...");
+  const [locationStatus, setLocationStatus] = useState("Trying to detect your current location automatically.");
   const hasPayload = Boolean(payload);
   const canSubmit = Boolean(user && hasPayload && !loading);
   const currentCheckInPath = `${location.pathname}${location.search}`;
@@ -69,7 +70,7 @@ export default function CheckInPage() {
   useEffect(() => {
     if (!hasPayload || locationNote || !navigator.geolocation) {
       if (!navigator.geolocation) {
-        setLocationStatus("Location detection is unavailable in this browser.");
+        setLocationStatus("Location detection is unavailable in this browser. You can still check in without it.");
       }
       return;
     }
@@ -81,11 +82,19 @@ export default function CheckInPage() {
         try {
           const detectedLocation = await reverseGeocode(coords.latitude, coords.longitude);
           if (!cancelled) {
+            setCoordinates({
+              latitude: coords.latitude,
+              longitude: coords.longitude,
+            });
             setLocationNote(detectedLocation);
             setLocationStatus("Current location detected automatically.");
           }
         } catch {
           if (!cancelled) {
+            setCoordinates({
+              latitude: coords.latitude,
+              longitude: coords.longitude,
+            });
             setLocationNote(`${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`);
             setLocationStatus("Using your device coordinates for this check-in.");
           }
@@ -93,7 +102,7 @@ export default function CheckInPage() {
       },
       () => {
         if (!cancelled) {
-          setLocationStatus("Allow location access to attach your current location automatically.");
+          setLocationStatus("Location access is off. Attendance can still be recorded without it.");
         }
       },
       {
@@ -142,11 +151,13 @@ export default function CheckInPage() {
         payload,
         user.username,
         normalizedEventCode,
-        locationNote.trim() || undefined
+        locationNote.trim() || undefined,
+        coordinates.latitude,
+        coordinates.longitude
       );
       setConfirmedCode(normalizedEventCode);
       setSuccess(
-        result.message || `You have been marked attended for event code ${normalizedEventCode}.`
+        result.message || `Attendance recorded for event code ${normalizedEventCode}.`
       );
       sessionStorage.removeItem("pendingCheckInPath");
       localStorage.removeItem("pendingCheckInPath");
@@ -231,11 +242,11 @@ export default function CheckInPage() {
             </label>
 
             <label className="user-field">
-              <span>Location note</span>
+              <span>Location (optional)</span>
               <input
                 value={locationNote}
                 onChange={(e) => setLocationNote(e.target.value)}
-                placeholder="Optional room, building, or location note"
+                placeholder="Detected automatically if you allow location"
                 disabled={!hasPayload}
               />
             </label>
@@ -254,7 +265,7 @@ export default function CheckInPage() {
 
             <div className="user-actions">
               <button className="user-btn user-btn--primary" type="submit" disabled={!canSubmit}>
-                {loading ? "Checking in..." : "Mark attendance"}
+                {loading ? "Submitting attendance..." : "Submit attendance"}
               </button>
               {user ? (
                 <Link to="/attendance" className="user-btn user-btn--ghost user-btn--link">View attendance</Link>
