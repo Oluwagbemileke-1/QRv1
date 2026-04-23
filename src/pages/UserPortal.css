@@ -148,6 +148,13 @@
   line-height: 1.6;
 }
 
+.user-note-detail {
+  display: block;
+  margin-top: 0.55rem;
+  color: #e2e8f0;
+  word-break: break-word;
+}
+
 @media (max-width: 768px) {
   .user-header { flex-direction: column; align-items: flex-start; padding: 1rem; }
   .user-main { width: min(100%, calc(100% - 1.25rem)); }

@@ -39,9 +39,11 @@ export default function CheckInPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [confirmedCode, setConfirmedCode] = useState("");
-  const [locationStatus, setLocationStatus] = useState("Trying to detect your current location automatically.");
+  const [locationStatus, setLocationStatus] = useState("Requesting your location for event check-in...");
+  const [locationBlocked, setLocationBlocked] = useState(false);
   const hasPayload = Boolean(payload);
-  const canSubmit = Boolean(user && hasPayload && !loading);
+  const hasCoordinates = coordinates.latitude != null && coordinates.longitude != null;
+  const canSubmit = Boolean(user && hasPayload && hasCoordinates && !loading);
   const currentCheckInPath = `${location.pathname}${location.search}`;
 
   const nextLoginUrl = `/login?next=${encodeURIComponent(`${location.pathname}${location.search}`)}`;
@@ -67,42 +69,46 @@ export default function CheckInPage() {
     }
   }, [currentCheckInPath, hasPayload, navigate]);
 
-  useEffect(() => {
-    if (!hasPayload || locationNote || !navigator.geolocation) {
-      if (!navigator.geolocation) {
-        setLocationStatus("Location detection is unavailable in this browser. You can still check in without it.");
-      }
+  const requestCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationBlocked(true);
+      setLocationStatus("Location detection is unavailable in this browser. Check-in requires location access.");
       return;
     }
 
     let cancelled = false;
+    setLocationBlocked(false);
+    setLocationStatus("Requesting your location for event check-in...");
 
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
+        if (cancelled) {
+          return;
+        }
+
+        setCoordinates({
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+        });
+
         try {
           const detectedLocation = await reverseGeocode(coords.latitude, coords.longitude);
           if (!cancelled) {
-            setCoordinates({
-              latitude: coords.latitude,
-              longitude: coords.longitude,
-            });
             setLocationNote(detectedLocation);
             setLocationStatus("Current location detected automatically.");
           }
         } catch {
           if (!cancelled) {
-            setCoordinates({
-              latitude: coords.latitude,
-              longitude: coords.longitude,
-            });
             setLocationNote(`${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)}`);
-            setLocationStatus("Using your device coordinates for this check-in.");
+            setLocationStatus("Current location captured automatically.");
           }
         }
       },
       () => {
         if (!cancelled) {
-          setLocationStatus("Location access is off. Attendance can still be recorded without it.");
+          setCoordinates({});
+          setLocationBlocked(true);
+          setLocationStatus("Location access is required for check-in. Please allow it to continue.");
         }
       },
       {
@@ -115,7 +121,15 @@ export default function CheckInPage() {
     return () => {
       cancelled = true;
     };
-  }, [hasPayload, locationNote]);
+  };
+
+  useEffect(() => {
+    if (!hasPayload || hasCoordinates) {
+      return;
+    }
+
+    return requestCurrentLocation();
+  }, [hasCoordinates, hasPayload]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -142,6 +156,11 @@ export default function CheckInPage() {
 
     if (normalizedLinkedCode && normalizedEventCode !== normalizedLinkedCode) {
       setError("The event code does not match this QR link.");
+      return;
+    }
+
+    if (!hasCoordinates) {
+      setError("We need your current location to submit attendance for this event.");
       return;
     }
 
@@ -241,20 +260,24 @@ export default function CheckInPage() {
               />
             </label>
 
-            <label className="user-field">
-              <span>Location (optional)</span>
-              <input
-                value={locationNote}
-                onChange={(e) => setLocationNote(e.target.value)}
-                placeholder="Detected automatically if you allow location"
-                disabled={!hasPayload}
-              />
-            </label>
-
             {hasPayload && (
-              <div className="user-note">
-                {locationStatus}
-              </div>
+              <>
+                <div className="user-note">
+                  {locationStatus}
+                  {locationNote && (
+                    <span className="user-note-detail">{locationNote}</span>
+                  )}
+                </div>
+                {locationBlocked && (
+                  <button
+                    type="button"
+                    className="user-btn user-btn--ghost"
+                    onClick={requestCurrentLocation}
+                  >
+                    Allow location access
+                  </button>
+                )}
+              </>
             )}
 
             {!payload && (

@@ -74,7 +74,7 @@ function normalizeNetError(error: unknown, fallback: string): Error {
 
 async function performNetFetch<T>(path: string, init: RequestInit, fallback: string): Promise<T> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 20000);
+  const timeoutId = setTimeout(() => controller.abort(), 45000);
 
   try {
     const res = await fetch(buildNetUrl(path), {
