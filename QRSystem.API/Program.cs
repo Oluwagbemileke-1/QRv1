@@ -68,12 +68,27 @@ builder.Services.Configure<IpRateLimitOptions>(options =>
 builder.Services.AddInMemoryRateLimiting();
 builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendCors", policy =>
+    {
+        policy
+            .WithOrigins(
+                "https://qrv1-5shu.onrender.com",
+                "http://localhost:5173"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
+
 builder.Services.Configure<QrSettings>(
     builder.Configuration.GetSection("QrSettings")
 );
 
 builder.Services.Configure<DjangoApiSettings>(
-    builder.Configuration.GetSection("DjangoApi")
+    builder.Configuration.GetSection("DjangoSettings")
 );
 
 builder.Services.AddHttpClient<IDjangoValidationService, DjangoValidationService>(client =>
@@ -100,8 +115,21 @@ app.MapGet("/", () => "API is running");
 
 app.UseHttpsRedirection();
 
+app.UseRouting();
+app.UseCors("FrontendCors");
+
+app.UseIpRateLimiting();
+
 app.UseAuthorization();
 
 app.MapControllers();
 
 app.Run();
+
+
+
+
+
+
+
+

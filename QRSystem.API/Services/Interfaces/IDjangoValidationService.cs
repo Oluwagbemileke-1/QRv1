@@ -7,7 +7,10 @@
                  string eventCode,
                  string? ipAddress = null,
                  string? deviceInfo = null,
-                 string? location = null
+                 string? location = null,
+                 double? latitude = null,
+                 double? longitude = null
+
              );
     }
 

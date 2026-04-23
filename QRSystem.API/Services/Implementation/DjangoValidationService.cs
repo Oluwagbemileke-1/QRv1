@@ -1,6 +1,5 @@
-﻿using System.Text.Json;
-using Microsoft.Extensions.Options;
-using QRSystem.API.Core.Settings;
+﻿using System.Net.Http.Json;
+using System.Text.Json;
 using QRSystem.API.Services.Interfaces;
 
 namespace QRSystem.API.Services.Implementations
@@ -11,11 +10,14 @@ namespace QRSystem.API.Services.Implementations
         private readonly ILogger<DjangoValidationService> _logger;
         private readonly string _internalToken;
 
-        public DjangoValidationService(HttpClient httpClient, ILogger<DjangoValidationService> logger, IConfiguration configuration)
+        public DjangoValidationService(
+            HttpClient httpClient,
+            ILogger<DjangoValidationService> logger,
+            IConfiguration configuration)
         {
             _httpClient = httpClient;
             _logger = logger;
-            _internalToken = configuration["InternalService:Token"]??string.Empty;
+            _internalToken = configuration["InternalService:Token"] ?? string.Empty;
         }
 
         public async Task<(bool Allowed, string Message)> ValidateScanAccessAsync(
@@ -23,7 +25,9 @@ namespace QRSystem.API.Services.Implementations
             string eventCode,
             string? ipAddress = null,
             string? deviceInfo = null,
-            string? location = null
+            string? location = null,
+            double? latitude = null,
+            double? longitude = null
         )
         {
             try
@@ -34,7 +38,9 @@ namespace QRSystem.API.Services.Implementations
                     event_code = eventCode,
                     ip_address = ipAddress,
                     device_info = deviceInfo,
-                    location
+                    location,
+                    latitude,
+                    longitude
                 };
 
                 using var request = new HttpRequestMessage(
@@ -64,6 +70,8 @@ namespace QRSystem.API.Services.Implementations
                         message = msg.GetString() ?? message;
                     else if (json.TryGetProperty("error", out var err))
                         message = err.GetString() ?? message;
+                    else if (json.TryGetProperty("detail", out var detail))
+                        message = detail.GetString() ?? message;
                 }
 
                 if (!response.IsSuccessStatusCode)

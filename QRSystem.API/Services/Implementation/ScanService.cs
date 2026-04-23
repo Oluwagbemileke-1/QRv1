@@ -2,7 +2,6 @@
 using QRSystem.API.Core.DTOs;
 using QRSystem.API.Core.Models;
 using QRSystem.API.Infrastructure.Repositories.Interfaces;
-using QRSystem.API.Services.Implementations;
 using QRSystem.API.Services.Interfaces;
 using System.Security.Cryptography;
 using System.Text;
@@ -33,16 +32,17 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
             _fraudService = fraudService;
             _logger = logger;
             _djangoValidationService = djangoValidationService;
-            _secretKey = configuration["QrSettings:SecretKey"];
+            _secretKey = configuration["QrSettings:SecretKey"]!;
         }
-
 
         public async Task<ScanResponseDto> ProcessScanAsync(
             string payload,
             string? ipAddress,
             string username,
             string eventCode,
-            string? location = null)
+            string? location = null,
+            double? latitude = null,
+            double? longitude = null)
         {
             try
             {
@@ -52,13 +52,16 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                 if (parts.Length != 3)
                 {
                     _logger.LogWarning("Invalid payload format from {Username}, IP: {IpAddress}", username, ipAddress);
+
                     await _scanRepository.AddAsync(ScanAttempt.Create(
                         username,
                         resolvedIp,
                         null,
                         Guid.Empty,
                         ScanResults.InvalidPayload,
-                        location
+                        location,
+                        latitude,
+                        longitude
                     ));
 
                     return new ScanResponseDto
@@ -80,13 +83,16 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                 if (computedSignature != signature)
                 {
                     _logger.LogWarning("Invalid signature for EventId: {EventId}", eventId);
+
                     await _scanRepository.AddAsync(ScanAttempt.Create(
                         username,
                         resolvedIp,
                         null,
                         eventId,
                         ScanResults.InvalidPayload,
-                        location
+                        location,
+                        latitude,
+                        longitude
                     ));
 
                     await _fraudService.LogFraudAsync(
@@ -110,13 +116,16 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                 if (DateTime.UtcNow > expiry)
                 {
                     _logger.LogWarning("Expired QR for EventId: {EventId}", eventId);
+
                     await _scanRepository.AddAsync(ScanAttempt.Create(
                         username,
                         resolvedIp,
                         null,
                         eventId,
                         ScanResults.Expired,
-                        location
+                        location,
+                        latitude,
+                        longitude
                     ));
 
                     await _fraudService.LogFraudAsync(
@@ -145,7 +154,9 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                         null,
                         eventId,
                         ScanResults.NotFound,
-                        location
+                        location,
+                        latitude,
+                        longitude
                     ));
 
                     await _fraudService.LogFraudAsync(
@@ -166,13 +177,24 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                 }
 
                 var isFraud = await _fraudService.CheckForFraudAsync(
-                    resolvedIp, username, eventId, qrCode, payload
+                    resolvedIp,
+                    username,
+                    eventId,
+                    qrCode,
+                    payload
                 );
 
                 if (isFraud)
                 {
                     await _scanRepository.AddAsync(ScanAttempt.Create(
-                        username, resolvedIp, qrCode.Id, eventId, ScanResults.Fraud, location
+                        username,
+                        resolvedIp,
+                        qrCode.Id,
+                        eventId,
+                        ScanResults.Fraud,
+                        location,
+                        latitude,
+                        longitude
                     ));
 
                     return new ScanResponseDto
@@ -189,7 +211,9 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                     eventCode,
                     resolvedIp,
                     deviceInfo,
-                    location
+                    location,
+                    latitude,
+                    longitude
                 );
 
                 if (!access.Allowed)
@@ -209,7 +233,9 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                         qrCode.Id,
                         eventId,
                         ScanResults.Fraud,
-                        location
+                        location,
+                        latitude,
+                        longitude
                     ));
 
                     return new ScanResponseDto
@@ -221,7 +247,14 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                 }
 
                 await _scanRepository.AddAsync(ScanAttempt.Create(
-                    username, resolvedIp, qrCode.Id, eventId, ScanResults.Success, location
+                    username,
+                    resolvedIp,
+                    qrCode.Id,
+                    eventId,
+                    ScanResults.Success,
+                    location,
+                    latitude,
+                    longitude
                 ));
 
                 qrCode.Deactivate();
@@ -254,10 +287,11 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                     IpAddress = s.IpAddress,
                     Result = s.Result,
                     Location = s.Location,
+                    Latitude = s.Latitude,
+                    Longitude = s.Longitude,
                     ScannedAt = TimeZoneInfo.ConvertTimeFromUtc(s.ScannedAt, _watZone)
                 }).ToList();
 
-                _logger.LogInformation("Retrieved {Count} scans for EventId: {EventId}", result.Count, eventId);
                 return result;
             }
             catch (Exception ex)
@@ -271,8 +305,6 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
         {
             try
             {
-                _logger.LogInformation("Fetching successful scans for EventId: {EventId}", eventId);
-
                 var scans = await _scanRepository.GetSuccessfulScansBySessionAsync(eventId);
                 var result = scans.Select(s => new ScanAttemptDto
                 {
@@ -280,10 +312,11 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                     IpAddress = s.IpAddress,
                     Result = s.Result,
                     Location = s.Location,
+                    Latitude = s.Latitude,
+                    Longitude = s.Longitude,
                     ScannedAt = TimeZoneInfo.ConvertTimeFromUtc(s.ScannedAt, _watZone)
                 }).ToList();
 
-                _logger.LogInformation("Retrieved {Count} successful scans for EventId: {EventId}", result.Count, eventId);
                 return result;
             }
             catch (Exception ex)
@@ -297,14 +330,12 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
         {
             try
             {
-                _logger.LogInformation("Fetching event stats for EventId: {EventId}", eventId);
-
                 var allScans = await _scanRepository.GetBySessionAsync(eventId);
                 var successfulScans = await _scanRepository.GetSuccessfulScansBySessionAsync(eventId);
                 var fraudCount = await _fraudService.GetFraudCountAsync(eventId);
                 var uniqueIps = await _scanRepository.GetUniqueIpCountAsync(eventId);
 
-                var stats = new EventStatsDto
+                return new EventStatsDto
                 {
                     EventId = eventId,
                     TotalScans = allScans.Count(),
@@ -312,12 +343,6 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                     FraudAttempts = fraudCount,
                     UniqueIps = uniqueIps
                 };
-
-                _logger.LogInformation(
-                    "Stats for EventId: {EventId} — Total: {Total}, Successful: {Successful}, Fraud: {Fraud}, UniqueIps: {UniqueIps}",
-                    eventId, stats.TotalScans, stats.SuccessfulScans, stats.FraudAttempts, stats.UniqueIps);
-
-                return stats;
             }
             catch (Exception ex)
             {

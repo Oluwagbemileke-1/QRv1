@@ -8,6 +8,8 @@ namespace QRSystem.API.Core.Models
         public string Username { get; private set; } = string.Empty;
         public string IpAddress { get; private set; } = string.Empty;
         public string? Location { get; private set; }
+        public double? Latitude { get; private set; }
+        public double? Longitude { get; private set; }
         public DateTime ScannedAt { get; private set; }
         public string Result { get; private set; } = string.Empty;
         public Guid? QrCodeId { get; private set; }
@@ -24,7 +26,9 @@ namespace QRSystem.API.Core.Models
             Guid? qrCodeId,
             Guid eventId,
             string result,
-            string? location = null)
+            string? location = null,
+            double? latitude = null,
+            double? longitude = null)
         {
             return new ScanAttempt
             {
@@ -35,6 +39,8 @@ namespace QRSystem.API.Core.Models
                 EventId = eventId,
                 Result = result,
                 Location = location,
+                Latitude = latitude,
+                Longitude = longitude,
                 ScannedAt = DateTime.UtcNow
             };
         }
