@@ -19,9 +19,19 @@ from drf_yasg import openapi
 from .tasks import send_welcome_email,send_otp,password_changed,resend_otp_email,verify_email_task,resend_verify_email_task
 from django.conf import settings
 from django.core.mail import send_mail
+from django.shortcuts import redirect
+from urllib.parse import urlencode
 
 
 User = get_user_model() # Get the custom user model defined in users/models.py
+
+
+def build_frontend_verify_redirect(status_value, message):
+    query = urlencode({
+        "status": status_value,
+        "message": message,
+    })
+    return f"{settings.FRONTEND_URL.rstrip('/')}/verify-email?{query}"
 
 
 def is_superuser_request(request):
@@ -55,8 +65,7 @@ def register(request):
 
 
        EmailVerification.objects.create(user=user,token_hash=hashed)
-       domain = request.get_host()
-       verification_link = f"{settings.FRONTEND_URL.rstrip('/' )}/verify-email/{raw_token}"
+       verification_link = f"{settings.BACKEND_URL.rstrip('/')}/api/users/verify-email/{raw_token}/"
        try:
            email_sent = verify_email_task(user.first_name, verification_link, user.email)
        except Exception as e:
@@ -98,43 +107,19 @@ def verify_email(request, token):
     try:
         verification = EmailVerification.objects.get(token_hash=token_hash)
     except EmailVerification.DoesNotExist:
-        return Response(
-            {
-                "status": "error",
-                "message": "Invalid verification link"
-            },
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return redirect(build_frontend_verify_redirect("invalid", "Invalid verification link"))
 
     user = verification.user
 
     if verification.is_expired():
         verification.delete()
-        return Response(
-            {
-                "status": "error",
-                "message": "Verification link expired. Please request a new verification email."
-            },
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return redirect(build_frontend_verify_redirect("expired", "Verification link expired. Please request a new verification email."))
     
     if user.is_verified and user.is_active:
-        return Response(
-            {
-                "status": "already_verified",
-                "message": "Your account is already verified. You can log in now."
-            },
-            status=status.HTTP_200_OK
-        )
+        return redirect(build_frontend_verify_redirect("already_verified", "Your account is already verified. You can log in now."))
     
     if verification.is_verified or verification.used:
-        return Response(
-            {
-                "status": "already_verified",
-                "message": "Your account is already verified. You can log in now."
-            },
-            status=status.HTTP_200_OK
-        )
+        return redirect(build_frontend_verify_redirect("already_verified", "Your account is already verified. You can log in now."))
     
     verification.used = True
     verification.is_verified = True
@@ -144,13 +129,7 @@ def verify_email(request, token):
     user.is_verified = True
     user.save(update_fields=["is_active", "is_verified"])
     send_welcome_email(user.email, user.first_name)
-    return Response(
-        {
-            "status" : "success",
-            "message": "Email verified successfully. You can log in now. "
-        },
-        status=status.HTTP_200_OK
-    )
+    return redirect(build_frontend_verify_redirect("success", "Email verified successfully. You can log in now."))
 
 @swagger_auto_schema(
     method='post',
@@ -195,8 +174,7 @@ def resend_verification(request):
     raw_token = EmailVerification.generate_token()
     hashed = EmailVerification.hash_token(raw_token)
     EmailVerification.objects.create(user=user, token_hash=hashed)
-    domain = request.get_host()
-    verification_link = f"{settings.FRONTEND_URL.rstrip('/' )}/verify-email/{raw_token}"
+    verification_link = f"{settings.BACKEND_URL.rstrip('/')}/api/users/verify-email/{raw_token}/"
     resend_verify_email_task(user.first_name, verification_link, user.email)
 
     return Response({"message": "Verification email resent","email": user.email}, status=status.HTTP_200_OK)

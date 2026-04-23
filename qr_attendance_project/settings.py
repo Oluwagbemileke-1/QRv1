@@ -71,6 +71,7 @@ MIDDLEWARE = [
 ]
 
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://qrv1-5shu.onrender.com')
+BACKEND_URL = os.getenv('BACKEND_URL', 'https://qr-attendance-api-smj1.onrender.com')
 
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
