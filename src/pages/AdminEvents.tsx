@@ -101,6 +101,7 @@ function statusClass(s: string) {
 export default function AdminEvents() {
   const navigate = useNavigate();
   const user = getStoredUser();
+  const isSuperuser = user?.is_superuser === true;
 
   const [events, setEvents] = useState<Event[]>([]);
   const [count, setCount] = useState(0);
@@ -495,7 +496,9 @@ export default function AdminEvents() {
           <div className="adm-modal" style={{ maxWidth: 380 }} onClick={(e) => e.stopPropagation()}>
             <h2 className="adm-modal-title">Delete Event?</h2>
             <p style={{ fontSize: 14, color: "#9ca3af", lineHeight: 1.6 }}>
-              This will soft-delete the event. It won't be visible to users but can be recovered from the database.
+              {isSuperuser
+                ? "This will soft-delete the event. It won't be visible to users but can be recovered from the database."
+                : "Are you sure you want to delete?"}
             </p>
             <div className="adm-modal-actions">
               <button className="adm-btn adm-btn--ghost" onClick={() => setDeleteId(null)}>Cancel</button>
