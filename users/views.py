@@ -31,6 +31,14 @@ def build_frontend_verify_link(raw_token):
     return f"{settings.FRONTEND_URL.rstrip('/')}/verify-email?{query}"
 
 
+def issue_email_verification_for_user(user):
+    EmailVerification.objects.filter(user=user).delete()
+    raw_token = EmailVerification.generate_token()
+    hashed = EmailVerification.hash_token(raw_token)
+    EmailVerification.objects.create(user=user, token_hash=hashed)
+    return build_frontend_verify_link(raw_token)
+
+
 def verify_email_token(token):
     token_hash = EmailVerification.hash_token(token)
     try:
@@ -100,14 +108,7 @@ def register(request):
        user.save()
 
        # Invalidate any older verification links for this user before issuing a new one.
-       EmailVerification.objects.filter(user=user).delete()
-
-       raw_token = EmailVerification.generate_token()
-       hashed = EmailVerification.hash_token(raw_token)
-
-
-       EmailVerification.objects.create(user=user,token_hash=hashed)
-       verification_link = build_frontend_verify_link(raw_token)
+       verification_link = issue_email_verification_for_user(user)
        try:
            email_sent = verify_email_task(user.first_name, verification_link, user.email)
        except Exception as e:
@@ -215,13 +216,7 @@ def resend_verification(request):
         last_verification.is_verified = False
         last_verification.save()
 
-    # Ensure only the newest verification link remains usable.
-    EmailVerification.objects.filter(user=user).delete()
-
-    raw_token = EmailVerification.generate_token()
-    hashed = EmailVerification.hash_token(raw_token)
-    EmailVerification.objects.create(user=user, token_hash=hashed)
-    verification_link = build_frontend_verify_link(raw_token)
+    verification_link = issue_email_verification_for_user(user)
     resend_verify_email_task(user.first_name, verification_link, user.email)
 
     return Response({"message": "Verification email resent","email": user.email}, status=status.HTTP_200_OK)
@@ -393,6 +388,8 @@ def update_user(request, id):
         data.pop('is_superuser', None)
         data.pop('is_active', None)
     
+    original_email = user.email
+
     if is_superuser_request(request):
         serializer = AdminUserSerializer(user, data=data, partial=True) 
     else:
@@ -400,8 +397,26 @@ def update_user(request, id):
     
 
     if serializer.is_valid():
-        serializer.save()
-        return Response({"message": "User updated successfully", "data": serializer.data}, status=status.HTTP_200_OK)
+        updated_user = serializer.save()
+        email_changed = "email" in serializer.validated_data and updated_user.email != original_email
+
+        response_message = "User updated successfully"
+        if email_changed:
+            updated_user.is_verified = False
+            updated_user.is_active = False
+            updated_user.save(update_fields=["is_verified", "is_active"])
+            issue_email_verification_for_user(updated_user)
+            response_message = "User updated successfully. Please verify your new email address."
+
+        response_serializer = AdminSerializer(updated_user) if is_superuser_request(request) else UserSerializer(updated_user)
+        return Response(
+            {
+                "message": response_message,
+                "email_verification_required": email_changed,
+                "data": response_serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
     else:
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
