@@ -32,6 +32,17 @@ DOTNET_API_BASE = os.getenv('DOTNET_API_BASE', 'https://qr-attendance-project-2y
 DOTNET_API_TIMEOUT = int(os.getenv('DOTNET_API_TIMEOUT', '60'))
 
 
+def _extract_scan_message(data, default_message):
+    if not isinstance(data, dict):
+        return default_message
+
+    result = data.get('data', {})
+    if not isinstance(result, dict):
+        result = {}
+
+    return result.get('message') or data.get('message') or data.get('error') or default_message
+
+
 def generate_qr_code(event_id, event_code):
     """
     Call .NET API to generate QR code for an event
@@ -93,9 +104,7 @@ def validate_qr_code(
         scan_result = result.get('result')
         if scan_result is None and isinstance(data, dict):
             scan_result = data.get('result')
-        message = 'API error'
-        if isinstance(data, dict):
-            message = result.get('message') or data.get('message') or data.get('error') or 'API error'
+        message = _extract_scan_message(data, 'QR scan service returned an unexpected response')
         if response.status_code == 200:
             if scan_result == 'Success':
                 return {'valid': True, 'fraud_detected': False, 'message': message or 'Scan successful'}
@@ -113,10 +122,26 @@ def validate_qr_code(
         if response.status_code == 400:
             return {'valid': False, 'fraud_detected': False, 'message': message or 'Invalid or expired QR code'}
 
-        return {'valid': False, 'fraud_detected': False, 'message': message or 'API error'}
+        print(f"QR scan service error: status={response.status_code} body={data}")
+        return {
+            'valid': False,
+            'fraud_detected': False,
+            'message': message or f'QR scan service error ({response.status_code})',
+        }
+    except requests.Timeout as e:
+        print(f"QR scan timeout: {e}")
+        return {
+            'valid': False,
+            'fraud_detected': False,
+            'message': 'QR scan service timed out. Please try again.',
+        }
     except requests.RequestException as e:
         print(f"Error validating QR: {e}")
-        return {'valid': False, 'fraud_detected': False, 'message': 'API error'}
+        return {
+            'valid': False,
+            'fraud_detected': False,
+            'message': 'QR scan service is unavailable. Please try again.',
+        }
 
 
 def get_attendance_count(event_id):

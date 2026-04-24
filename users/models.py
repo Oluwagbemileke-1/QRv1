@@ -83,3 +83,31 @@ class EmailVerification(models.Model):
     
     def __str__(self):
         return f"{self.user.email} - {self.is_verified}"
+
+
+class ChangeEmailVerification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    new_email = models.EmailField()
+    token_hash = models.CharField(max_length=64)
+    is_verified = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    used = models.BooleanField(default=False)
+
+    def is_expired(self):
+        return timezone.now() > self.created_at + timedelta(minutes=10)
+
+    def time_left(self):
+        expiry_time = self.created_at + timedelta(minutes=10)
+        remaining = expiry_time - timezone.now()
+        return max(0, int(remaining.total_seconds()))
+
+    @staticmethod
+    def generate_token():
+        return secrets.token_urlsafe(32)
+
+    @staticmethod
+    def hash_token(token):
+        return hashlib.sha256(token.encode()).hexdigest()
+
+    def __str__(self):
+        return f"{self.user.username} -> {self.new_email}"

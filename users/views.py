@@ -1,5 +1,6 @@
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import authentication_classes
 from rest_framework.response import Response
 from .serializers import RegisterSerializer, UserSerializer, ChangePasswordSerializer, AdminUserSerializer, UpdateSerializer,AdminSerializer, ForgotPasswordSerializer,VerifyOTPSerializer,ResetPasswordSerializer,ResendOTPSerializer
 from rest_framework.pagination import PageNumberPagination
@@ -8,7 +9,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import update_last_login
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db.models import Q
-from .models import PasswordResetOTP,EmailVerification
+from .models import PasswordResetOTP,EmailVerification,ChangeEmailVerification
 import random
 from django.utils import timezone
 from django.contrib.auth.password_validation import validate_password
@@ -16,7 +17,7 @@ from django.core.exceptions import ValidationError
 from datetime import timedelta
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from .tasks import send_welcome_email,send_otp,password_changed,resend_otp_email,verify_email_task,resend_verify_email_task
+from .tasks import send_welcome_email,send_otp,password_changed,resend_otp_email,verify_email_task,resend_verify_email_task,verify_changed_email_task,email_changed_notice_task,email_changed_success_task
 from django.conf import settings
 from django.core.mail import send_mail
 from django.shortcuts import redirect
@@ -31,12 +32,29 @@ def build_frontend_verify_link(raw_token):
     return f"{settings.FRONTEND_URL.rstrip('/')}/verify-email?{query}"
 
 
+def build_frontend_change_email_verify_link(raw_token):
+    query = urlencode({"token": raw_token, "flow": "change-email"})
+    return f"{settings.FRONTEND_URL.rstrip('/')}/verify-email?{query}"
+
+
+def build_backend_change_email_verify_link(raw_token):
+    return f"{settings.BACKEND_URL.rstrip('/')}/api/users/change-email/{raw_token}/"
+
+
 def issue_email_verification_for_user(user):
     EmailVerification.objects.filter(user=user).delete()
     raw_token = EmailVerification.generate_token()
     hashed = EmailVerification.hash_token(raw_token)
     EmailVerification.objects.create(user=user, token_hash=hashed)
     return build_frontend_verify_link(raw_token)
+
+
+def issue_change_email_verification_for_user(user, new_email):
+    ChangeEmailVerification.objects.filter(user=user).delete()
+    raw_token = ChangeEmailVerification.generate_token()
+    hashed = ChangeEmailVerification.hash_token(raw_token)
+    ChangeEmailVerification.objects.create(user=user, new_email=new_email, token_hash=hashed)
+    return build_backend_change_email_verify_link(raw_token)
 
 
 def verify_email_token(token):
@@ -78,9 +96,49 @@ def verify_email_token(token):
     user.is_verified = True
     user.save(update_fields=["is_active", "is_verified"])
     send_welcome_email(user.email, user.first_name)
+
     return {
         "status": "success",
         "message": "Email verified successfully. You can log in now.",
+    }, status.HTTP_200_OK
+
+
+def verify_change_email_token(token):
+    token_hash = ChangeEmailVerification.hash_token(token)
+    try:
+        verification = ChangeEmailVerification.objects.get(token_hash=token_hash)
+    except ChangeEmailVerification.DoesNotExist:
+        return {
+            "status": "invalid",
+            "message": "Invalid change email link",
+        }, status.HTTP_400_BAD_REQUEST
+
+    user = verification.user
+
+    if verification.is_expired():
+        verification.delete()
+        return {
+            "status": "expired",
+            "message": "Change email link expired. Please request another verification email.",
+        }, status.HTTP_400_BAD_REQUEST
+
+    if verification.is_verified or verification.used:
+        return {
+            "status": "already_verified",
+            "message": "Email change already verified.",
+        }, status.HTTP_200_OK
+
+    verification.used = True
+    verification.is_verified = True
+    verification.save(update_fields=["used", "is_verified"])
+
+    user.is_verified = True
+    user.save(update_fields=["is_verified"])
+    email_changed_success_task(user.first_name, verification.new_email)
+
+    return {
+        "status": "success",
+        "message": "Email changed and verified successfully.",
     }, status.HTTP_200_OK
 
 
@@ -99,7 +157,8 @@ def is_verified_active_user(user):
 )
 
 @api_view(['POST'])
-
+@authentication_classes([])
+@permission_classes([AllowAny])
 def register(request):
     serializer = RegisterSerializer(data=request.data)
     # import pdb; pdb.set_trace()
@@ -145,14 +204,37 @@ def register(request):
     operation_description="Verify the user's email when the link is opened."
 )
 @api_view(["GET"])
+@authentication_classes([])
+@permission_classes([AllowAny])
 def verify_email(request, token):
     # Backward compatibility for older backend links: redirect to frontend without consuming token.
     return redirect(build_frontend_verify_link(token))
 
 
 @swagger_auto_schema(
+    method='get',
+    manual_parameters=[
+        openapi.Parameter(
+            'token',
+            openapi.IN_PATH,
+            description="Change email verification token",
+            type=openapi.TYPE_STRING
+        )
+    ],
+    tags=["ðŸ‘¤ USERS"],
+    operation_summary="Verify Changed Email",
+    operation_description="Redirect to the frontend changed-email verification page."
+)
+@api_view(["GET"])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def verify_change_email(request, token):
+    return redirect(build_frontend_change_email_verify_link(token))
+
+
+@swagger_auto_schema(
     method='post',
-    tags=["👤USERS"],
+    tags=["👤 USERS"],
     operation_summary="Confirm Verify Email",
     operation_description="Verify the user's email using token sent in request body.",
     request_body=openapi.Schema(
@@ -164,6 +246,7 @@ def verify_email(request, token):
     )
 )
 @api_view(["POST"])
+@authentication_classes([])
 @permission_classes([AllowAny])
 def verify_email_confirm(request):
     token = request.data.get("token")
@@ -179,6 +262,37 @@ def verify_email_confirm(request):
     payload, code = verify_email_token(token)
     return Response(payload, status=code)
 
+
+@swagger_auto_schema(
+    method='post',
+    tags=["ðŸ‘¤ USERS"],
+    operation_summary="Confirm Change Email",
+    operation_description="Confirm the user's changed email using token sent in request body.",
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'token': openapi.Schema(type=openapi.TYPE_STRING),
+        },
+        required=['token']
+    )
+)
+@api_view(["POST"])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def verify_change_email_confirm(request):
+    token = request.data.get("token")
+    if not token:
+        return Response(
+            {
+                "status": "error",
+                "message": "Token is required",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    payload, code = verify_change_email_token(token)
+    return Response(payload, status=code)
+
 @swagger_auto_schema(
     method='post',
     tags=["👤 USERS"],
@@ -192,6 +306,8 @@ def verify_email_confirm(request):
     )
 )
 @api_view(["POST"])
+@authentication_classes([])
+@permission_classes([AllowAny])
 def resend_verification(request):
     email = request.data.get("email")
     try:
@@ -199,7 +315,7 @@ def resend_verification(request):
     except User.DoesNotExist:
         return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
     
-    if user.is_active:
+    if user.is_active and user.is_verified:
         return Response({"message": "Already verified"})
     
     last_verification = EmailVerification.objects.filter(user=user).order_by("-created_at").first()
@@ -214,12 +330,55 @@ def resend_verification(request):
             }, status=status.HTTP_429_TOO_MANY_REQUESTS)
 
         last_verification.is_verified = False
-        last_verification.save()
+        last_verification.save(update_fields=["is_verified"])
 
     verification_link = issue_email_verification_for_user(user)
     resend_verify_email_task(user.first_name, verification_link, user.email)
 
     return Response({"message": "Verification email resent","email": user.email}, status=status.HTTP_200_OK)
+
+
+@swagger_auto_schema(
+    method='post',
+    tags=["ðŸ‘¤ USERS"],
+    operation_summary="Resend Change Email Verification",
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'email': openapi.Schema(type=openapi.TYPE_STRING)
+        },
+        required=['email']
+    )
+)
+@api_view(["POST"])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def resend_change_email_verification(request):
+    email = request.data.get("email")
+    verification = ChangeEmailVerification.objects.select_related("user").filter(
+        new_email=email,
+        used=False,
+    ).order_by("-created_at").first()
+    if not verification:
+        return Response({"error": "Change email request not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    time_diff = (timezone.now() - verification.created_at).total_seconds()
+    if time_diff < 60:
+        return Response({
+            "status": "error",
+            "message": f"Wait {int(60 - time_diff)}s before requesting another link"
+        }, status=status.HTTP_429_TOO_MANY_REQUESTS)
+
+    verification_link = issue_change_email_verification_for_user(verification.user, verification.new_email)
+    verify_changed_email_task(verification.user.first_name, verification_link, verification.new_email)
+
+    return Response(
+        {
+            "message": "Change email verification resent",
+            "email": verification.new_email,
+        },
+        status=status.HTTP_200_OK,
+    )
 
 @swagger_auto_schema(
     method='post',
@@ -238,6 +397,8 @@ def resend_verification(request):
 
 
 @api_view(['POST'])
+@authentication_classes([])
+@permission_classes([AllowAny])
 def login(request):
     username = request.data.get('username') 
     password = request.data.get('password')
@@ -281,6 +442,7 @@ def login(request):
 
 
 @api_view(['POST'])
+@authentication_classes([])
 @permission_classes([AllowAny])
 def logout(request):
     refresh_token = request.data.get("refresh") 
@@ -395,12 +557,43 @@ def update_user(request, id):
  
 
     if serializer.is_valid():
+        original_email = user.email
         updated_user = serializer.save()
+        requested_email = serializer.validated_data.get("email")
+        email_changed = bool(
+            requested_email
+            and requested_email != original_email
+            and not is_superuser_request(request)
+        )
+
+        response_message = "User updated successfully"
+        verification_email = None
+
+        if email_changed:
+            updated_user.is_verified = False
+            updated_user.save(update_fields=["is_verified"])
+            verification_link = issue_change_email_verification_for_user(updated_user, requested_email)
+            verification_email = requested_email
+            try:
+                email_sent = verify_changed_email_task(updated_user.first_name, verification_link, requested_email)
+                email_changed_notice_task(updated_user.first_name, original_email, requested_email)
+            except Exception as exc:
+                print("UPDATE EMAIL VERIFY SEND EXCEPTION:", str(exc))
+                email_sent = False
+
+            response_message = (
+                "User updated successfully. Check your email to verify your new address."
+                if email_sent
+                else "User updated successfully, but verification email could not be sent. Please use resend verification."
+            )
+
         response_serializer = AdminSerializer(updated_user) if is_superuser_request(request) else UserSerializer(updated_user)
         return Response(
             {
-                "message": "User updated successfully",
-                "email_verification_required": False,
+                "message": response_message,
+                "email_verification_required": email_changed,
+                "verification_email": verification_email,
+                "verification_endpoint": "/api/users/change-email/confirm/" if email_changed else None,
                 "data": response_serializer.data,
             },
             status=status.HTTP_200_OK,
@@ -484,6 +677,8 @@ def change_password(request):
 )
 
 @api_view(['POST'])
+@authentication_classes([])
+@permission_classes([AllowAny])
 def forgot_password(request):
     serializer = ForgotPasswordSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -531,6 +726,8 @@ def forgot_password(request):
     responses={200: "OTP verified"}
 )
 @api_view(['POST'])
+@authentication_classes([])
+@permission_classes([AllowAny])
 def verify_otp(request):
     serializer = VerifyOTPSerializer(data=request.data)
     serializer.is_valid(raise_exception =True)
@@ -587,6 +784,8 @@ def verify_otp(request):
     responses={200: "Password reset successful"}
 )
 @api_view(['POST'])
+@authentication_classes([])
+@permission_classes([AllowAny])
 def reset_password(request):
 
     serializer = ResetPasswordSerializer(data=request.data)
@@ -634,6 +833,8 @@ def reset_password(request):
     responses={200: "OTP resent successfully"}
 )
 @api_view(['POST'])
+@authentication_classes([])
+@permission_classes([AllowAny])
 def resend_otp(request):
     serializer = ResendOTPSerializer(data = request.data)
     serializer.is_valid(raise_exception=True)

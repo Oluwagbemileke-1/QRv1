@@ -140,7 +140,7 @@ class UpdateSerializer(serializers.ModelSerializer):
 
         if email and User.objects.exclude(id=user.id).filter(email=email).exists():
             raise serializers.ValidationError({"email": "Email already exists."})
-        
+
         if phone and User.objects.exclude(id=user.id).filter(phone=phone).exists():
             raise serializers.ValidationError({"phone": "Phone number already exists."})
 
