@@ -221,7 +221,7 @@ def verify_email(request, token):
             type=openapi.TYPE_STRING
         )
     ],
-    tags=["ðŸ‘¤ USERS"],
+    tags=["👤 USERS"],
     operation_summary="Verify Changed Email",
     operation_description="Redirect to the frontend changed-email verification page."
 )
@@ -265,7 +265,7 @@ def verify_email_confirm(request):
 
 @swagger_auto_schema(
     method='post',
-    tags=["ðŸ‘¤ USERS"],
+    tags=["👤 USERS"],
     operation_summary="Confirm Change Email",
     operation_description="Confirm the user's changed email using token sent in request body.",
     request_body=openapi.Schema(
@@ -340,7 +340,7 @@ def resend_verification(request):
 
 @swagger_auto_schema(
     method='post',
-    tags=["ðŸ‘¤ USERS"],
+    tags=["👤 USERS"],
     operation_summary="Resend Change Email Verification",
     request_body=openapi.Schema(
         type=openapi.TYPE_OBJECT,
