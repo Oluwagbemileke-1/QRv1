@@ -40,7 +40,49 @@ def _extract_scan_message(data, default_message):
     if not isinstance(result, dict):
         result = {}
 
-    return result.get('message') or data.get('message') or data.get('error') or default_message
+    return (
+        result.get('message')
+        or result.get('responseMessage')
+        or data.get('message')
+        or data.get('responseMessage')
+        or data.get('error')
+        or default_message
+    )
+
+
+def _extract_scan_result(data):
+    if not isinstance(data, dict):
+        return None
+
+    result = data.get('data', {})
+    if isinstance(result, dict):
+        nested_result = result.get('result')
+        if nested_result is not None:
+            return nested_result
+
+    return data.get('result')
+
+
+def _extract_response_code(data):
+    if not isinstance(data, dict):
+        return None
+
+    result = data.get('data', {})
+    if isinstance(result, dict) and result.get('responseCode') is not None:
+        return result.get('responseCode')
+
+    return data.get('responseCode')
+
+
+def _extract_success_flag(data):
+    if not isinstance(data, dict):
+        return None
+
+    result = data.get('data', {})
+    if isinstance(result, dict) and result.get('isSuccessful') is not None:
+        return result.get('isSuccessful')
+
+    return data.get('isSuccessful')
 
 
 def generate_qr_code(event_id, event_code):
@@ -98,18 +140,24 @@ def validate_qr_code(
         except ValueError:
             data = {}
 
-        result = data.get('data', {}) if isinstance(data, dict) else {}
-        if not isinstance(result, dict):
-            result = {}
-        scan_result = result.get('result')
-        if scan_result is None and isinstance(data, dict):
-            scan_result = data.get('result')
+        scan_result = _extract_scan_result(data)
+        response_code = _extract_response_code(data)
+        is_successful = _extract_success_flag(data)
         message = _extract_scan_message(data, 'QR scan service returned an unexpected response')
+
+        if scan_result is None:
+            if is_successful is True or response_code == '00':
+                scan_result = 'Success'
+            elif response.status_code == 403:
+                scan_result = 'Fraud'
+
         if response.status_code == 200:
             if scan_result == 'Success':
                 return {'valid': True, 'fraud_detected': False, 'message': message or 'Scan successful'}
             if scan_result == 'Fraud':
                 return {'valid': False, 'fraud_detected': True, 'message': message or 'Fraud detected'}
+            if is_successful is False or (response_code and response_code != '00'):
+                return {'valid': False, 'fraud_detected': False, 'message': message or 'Scan not allowed'}
             return {'valid': False, 'fraud_detected': False, 'message': message or 'Invalid or expired QR code'}
 
         if response.status_code == 403:
