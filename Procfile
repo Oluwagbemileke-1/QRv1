@@ -1,1 +1,1 @@
-web: gunicorn qr_attendance_project.wsgi
+web: gunicorn qr_attendance_project.wsgi:application --timeout 90
