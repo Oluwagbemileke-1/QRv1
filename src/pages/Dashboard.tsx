@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getStoredUser, getUserDisplayName } from "../api/auth";
-import { getMyAttendance } from "../api/attendance";
+import { getMyAttendance, type AttendanceRecord } from "../api/attendance";
 import { getMyEvents, type Event, type UserEventGroups } from "../api/events";
 import "./Dashboard.css";
 
@@ -33,7 +33,7 @@ export default function Dashboard() {
     total: 0,
     attended: 0,
     missed: 0,
-    attendedEventIds: [] as string[],
+    records: [] as AttendanceRecord[],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -54,7 +54,7 @@ export default function Dashboard() {
           total: attendanceSummary.total,
           attended: attendanceSummary.attended,
           missed: attendanceSummary.missed,
-          attendedEventIds: attendanceSummary.records.map((record) => record.event_id).filter(Boolean),
+          records: attendanceSummary.records,
         });
       })
       .catch((err: Error) => setError(err.message || "Failed to load your dashboard."))
@@ -65,13 +65,23 @@ export default function Dashboard() {
     () => events.upcoming.length + events.active.length + events.past.length,
     [events]
   );
-  const attendedEventIds = useMemo(() => new Set(attendance.attendedEventIds), [attendance.attendedEventIds]);
+  const recentAttendance = useMemo(
+    () =>
+      [...attendance.records]
+        .sort((a, b) => {
+          const left = new Date(a.marked_at || a.event_date || "").getTime();
+          const right = new Date(b.marked_at || b.event_date || "").getTime();
+          return right - left;
+        })
+        .slice(0, 6),
+    [attendance.records]
+  );
 
   return (
     <div className="dash-wrapper">
       <header className="dash-header">
         <div className="dash-header-left">
-          <div className="dash-logo">QR</div>
+          <div className="dash-logo">QRAMS</div>
           <nav className="dash-nav">
             <span className="dash-nav-link dash-nav-link--active">Dashboard</span>
             <Link to="/attendance" className="dash-nav-link">Attendance</Link>
@@ -99,7 +109,7 @@ export default function Dashboard() {
             <span className="dash-hero-note">
               {pendingCheckInPath
                 ? "Your scanned event is ready. Continue to enter the event code."
-                : "Check-in only works from a scanned event QR."}
+                : " "}
             </span>
           </div>
         </section>
@@ -127,16 +137,32 @@ export default function Dashboard() {
             <span className="dash-stat-num">{loading ? "-" : attendance.missed}</span>
             <span className="dash-stat-label">Missed</span>
           </div>
+          <div className="dash-stat">
+            <span className="dash-stat-num">
+              {loading
+                ? "-"
+                : attendance.total > 0
+                  ? `${Math.round((attendance.attended / attendance.total) * 100)}%`
+                  : "0%"}
+            </span>
+            <span className="dash-stat-label">Rate</span>
+          </div>
         </section>
 
         <section className="dash-grid">
           <article className="dash-panel">
             <div className="dash-panel-head">
               <h2>Ready For You</h2>
-              <p>
-                Active and upcoming events you've been invited to. Active now: {loading ? "-" : events.active.length}.
-                Upcoming later: {loading ? "-" : events.upcoming.length}. Scan the QR shared for your event to begin check-in.
-              </p>
+              {!loading && events.active.length === 0 && events.upcoming.length === 0 ? (
+                <p>No active or upcoming invites right now.</p>
+              ) : (
+                <div className="dash-panel-copy">
+                  <p>Active and upcoming events you've been invited to.</p>
+                  <p>Active now: {loading ? "-" : events.active.length}.</p>
+                  <p>Upcoming later: {loading ? "-" : events.upcoming.length}.</p>
+                  <p>Scan the QR shared for your event to begin check-in.</p>
+                </div>
+              )}
             </div>
             <div className="dash-panel-body">
               {loading ? <p className="dash-empty">Loading events...</p> : (
@@ -147,9 +173,6 @@ export default function Dashboard() {
                   {events.upcoming.map((event) => (
                     <EventRow key={`upcoming-${event.id}`} event={event} actionLabel="Upcoming" />
                   ))}
-                  {events.active.length === 0 && events.upcoming.length === 0 && (
-                    <p className="dash-empty">No active or upcoming invites right now.</p>
-                  )}
                 </>
               )}
             </div>
@@ -158,21 +181,33 @@ export default function Dashboard() {
           <article className="dash-panel">
             <div className="dash-panel-head">
               <h2>Recent Outcomes</h2>
-              <p>See what you already attended or missed.</p>
+              <p>See the most recent invites you attended or missed.</p>
             </div>
             <div className="dash-panel-body">
               {loading ? <p className="dash-empty">Loading event history...</p> : (
                 <>
-                  {events.past.slice(0, 6).map((event) => (
+                  {recentAttendance.map((record) => (
                     <EventRow
-                      key={`past-${event.id}`}
-                      event={event}
-                      actionLabel={attendedEventIds.has(event.id) ? "Attended/Past" : "Past"}
+                      key={`history-${record.id}`}
+                      event={{
+                        id: record.event_id || record.id,
+                        title: record.event_name,
+                        description: "",
+                        date: record.event_date,
+                        start_time: record.marked_at ? new Date(record.marked_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—",
+                        end_time: "",
+                        location_name: record.event_location || "",
+                        event_code: record.event_code || "",
+                        status: record.status === "attended" ? "Attended" : "Missed",
+                        created_by: { id: 0, username: "", fullname: "" },
+                        created_at: record.marked_at || record.event_date,
+                      }}
+                      actionLabel={record.status === "attended" ? "Attended" : "Missed"}
                       actionTo="/attendance"
                     />
                   ))}
-                  {events.past.length === 0 && (
-                    <p className="dash-empty">No past invitations yet.</p>
+                  {recentAttendance.length === 0 && (
+                    <p className="dash-empty">No attendance results yet.</p>
                   )}
                 </>
               )}

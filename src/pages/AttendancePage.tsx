@@ -92,7 +92,7 @@ export default function AttendancePage() {
       {/* ── Top nav ── */}
       <header className="att-nav">
         <div className="att-nav-left">
-          <div className="att-nav-logo">QR</div>
+          <div className="att-nav-logo">QRAMS</div>
           <nav className="att-nav-links">
             <Link to="/dashboard" className="att-nav-link">Dashboard</Link>
             <span className="att-nav-link att-nav-link--active">Attendance</span>

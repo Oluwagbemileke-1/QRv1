@@ -176,7 +176,8 @@ export default function CheckInPage() {
         normalizedEventCode,
         payload,
         latitude,
-        longitude
+        longitude,
+        locationNote.trim() || undefined
       );
       setConfirmedCode(normalizedEventCode);
       setSuccess(
@@ -195,7 +196,7 @@ export default function CheckInPage() {
     <div className="user-wrapper">
       <header className="user-header">
         <div className="user-brand">
-          <div className="user-logo">QR</div>
+          <div className="user-logo">QRAMS</div>
           <div>
             <p className="user-eyebrow">Check In</p>
             <h1 className="user-header-title">{user ? `Hello ${displayName}` : "Event access"}</h1>

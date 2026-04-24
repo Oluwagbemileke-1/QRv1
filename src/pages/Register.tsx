@@ -72,7 +72,7 @@ export default function Register() {
     <div className="auth-wrapper">
       <div className="auth-card auth-card--wide">
         <div className="auth-brand">
-          <span className="auth-logo">QR</span>
+          <span className="auth-logo">QRAMS</span>
           <h1 className="auth-title">Create account</h1>
           <p className="auth-subtitle">
             {nextPath ? "Create your account to continue with this event" : "Fill in your details to get started"}

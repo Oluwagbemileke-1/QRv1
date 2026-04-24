@@ -99,7 +99,7 @@ export default function Login() {
     <div className="auth-wrapper">
       <div className="auth-card">
         <div className="auth-brand">
-          <span className="auth-logo">QR</span>
+          <span className="auth-logo">QRAMS</span>
           <h1 className="auth-title">Welcome back</h1>
           <p className="auth-subtitle">
             {nextPath ? "Sign in to continue your check-in" : "Sign in to your account"}

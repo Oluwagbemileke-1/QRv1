@@ -19,6 +19,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [originalEmail, setOriginalEmail] = useState(user?.email || "");
 
   useEffect(() => {
     if (!user?.id) {
@@ -28,6 +29,7 @@ export default function ProfilePage() {
 
     refreshStoredUserProfile()
       .then((freshUser) => {
+        setOriginalEmail(freshUser.email || "");
         setForm({
           first_name: freshUser.first_name || "",
           last_name: freshUser.last_name || "",
@@ -51,6 +53,7 @@ export default function ProfilePage() {
 
   const resetProfileForm = async () => {
     const freshUser = await refreshStoredUserProfile();
+    setOriginalEmail(freshUser.email || "");
     setForm({
       first_name: freshUser.first_name || "",
       last_name: freshUser.last_name || "",
@@ -92,10 +95,28 @@ export default function ProfilePage() {
     setSuccess("");
 
     try {
-      await updateMyProfile(form);
+      const submittedEmail = form.email;
+      const response = await updateMyProfile(form);
+      const emailChanged =
+        submittedEmail.trim().toLowerCase() !== originalEmail.trim().toLowerCase();
+      const requiresEmailVerification =
+        response.data?.email_verification_required === true || emailChanged;
+
       await resetProfileForm();
       setIsEditing(false);
-      setSuccess("Profile updated successfully.");
+
+      if (requiresEmailVerification) {
+        setSuccess(response.message || "Your email was changed. Please verify your new email address.");
+
+        window.setTimeout(async () => {
+          await logout();
+          navigate(`/verify-email?email=${encodeURIComponent(submittedEmail)}`, { replace: true });
+        }, 1200);
+
+        return;
+      }
+
+      setSuccess(response.message || "Profile updated successfully.");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to update profile.");
     } finally {
@@ -112,7 +133,7 @@ export default function ProfilePage() {
     <div className="user-wrapper">
       <header className="user-header">
         <div className="user-brand">
-          <div className="user-logo">QR</div>
+          <div className="user-logo">QRAMS</div>
           <div>
             <p className="user-eyebrow">Profile</p>
             <h1 className="user-header-title">{displayName}</h1>
@@ -127,52 +148,63 @@ export default function ProfilePage() {
 
       <main className="user-main">
         <section className="user-panel user-panel--narrow">
-          <div className="user-panel-head">
-            <h2>My Profile</h2>
-            <p>Review your account details here. Tap edit when you want to make changes.</p>
+          <div className="profile-hero">
+            <div className="profile-orb" aria-hidden="true">
+              {displayName ? displayName.charAt(0).toUpperCase() : "U"}
+            </div>
+            <div className="profile-hero-copy">
+              <p className="profile-kicker">Account center</p>
+              <div className="user-panel-head" style={{ marginBottom: 0 }}>
+                <h2>My Profile</h2>
+                
+              </div>
+            </div>
           </div>
 
           <form className="user-form" onSubmit={handleSubmit}>
             {error && <div className="user-alert user-alert--error">{error}</div>}
             {success && <div className="user-alert user-alert--success">{success}</div>}
             {loadingProfile && <div className="user-note">Loading your latest profile details...</div>}
+
             {!loadingProfile && !form.phone && (
               <div className="user-note">
                 No phone number is currently saved on your account. Tap <strong>Edit profile</strong> to add one.
               </div>
             )}
 
-            <div className="user-form-grid">
+            <div className="profile-form-shell">
+              <div className="user-form-grid">
+                <label className="user-field">
+                  <span>First name</span>
+                  <input name="first_name" value={form.first_name} onChange={handleChange} disabled={!isEditing || saving} />
+                </label>
+                <label className="user-field">
+                  <span>Last name</span>
+                  <input name="last_name" value={form.last_name} onChange={handleChange} disabled={!isEditing || saving} />
+                </label>
+              </div>
+
               <label className="user-field">
-                <span>First name</span>
-                <input name="first_name" value={form.first_name} onChange={handleChange} disabled={!isEditing || saving} />
+                <span>Username</span>
+                <input name="username" value={form.username} onChange={handleChange} disabled={!isEditing || saving} />
               </label>
+
               <label className="user-field">
-                <span>Last name</span>
-                <input name="last_name" value={form.last_name} onChange={handleChange} disabled={!isEditing || saving} />
+                <span>Email</span>
+                <input name="email" type="email" value={form.email} onChange={handleChange} disabled={!isEditing || saving} />
+              </label>
+
+              <label className="user-field">
+                <span>Phone</span>
+                <input
+                  name="phone"
+                  value={form.phone}
+                  onChange={handleChange}
+                  disabled={!isEditing || saving}
+                  placeholder={isEditing ? "Add your phone number" : ""}
+                />
               </label>
             </div>
-
-            <label className="user-field">
-              <span>Username</span>
-              <input name="username" value={form.username} onChange={handleChange} disabled={!isEditing || saving} />
-            </label>
-
-            <label className="user-field">
-              <span>Email</span>
-              <input name="email" type="email" value={form.email} onChange={handleChange} disabled={!isEditing || saving} />
-            </label>
-
-            <label className="user-field">
-              <span>Phone</span>
-              <input
-                name="phone"
-                value={form.phone}
-                onChange={handleChange}
-                disabled={!isEditing || saving}
-                placeholder={isEditing ? "Add your phone number" : ""}
-              />
-            </label>
 
             <div className="user-actions">
               {isEditing ? (

@@ -9,6 +9,7 @@ export interface AttendanceRecord {
   event_id: string;
   event_name: string;
   event_date: string;        // ISO date string
+  event_code?: string;
   event_location?: string;
   status: AttendanceStatus;
   marked_at?: string;        // ISO datetime when scanned
@@ -32,9 +33,12 @@ export interface MyEventAttendanceStatus {
 export interface AttendanceCheckInResponse {
   message: string;
   event?: string;
+  event_id?: string;
   ip?: string;
   device?: string;
 }
+
+const RECENT_ATTENDANCE_STORAGE_KEY = "recentAttendanceRecords";
 
 function extractErrorMessage(payload: unknown): string {
   if (payload == null) {
@@ -159,6 +163,12 @@ function normalizeAttendanceRecord(record: unknown, index: number): AttendanceRe
   return {
     id: String(item.id || item.attendance_id || item.record_id || `${index}`),
     event_id: String(item.event_id || item.event_uuid || event?.id || ""),
+    event_code: readString(
+      item.event_code,
+      item.code,
+      event?.event_code,
+      event?.code
+    ) || undefined,
     event_name: readString(
       item.event_name,
       item.event_title,
@@ -208,18 +218,8 @@ function normalizeAttendanceSummary(payload: unknown): AttendanceSummary {
     .filter((record): record is AttendanceRecord => Boolean(record));
   const attendedFromRecords = records.filter((record) => record.status === "attended").length;
   const missedFromRecords = records.filter((record) => record.status === "missed").length;
-
-  return {
-    total: coerceCount(
-      data.total ??
-      data.total_attended ??
-      summary.total ??
-      summary.count ??
-      summary.total_events ??
-      root.total ??
-      root.total_attended
-    ) || records.length,
-    attended: coerceCount(
+  const attendedCount =
+    coerceCount(
       data.attended ??
       data.present ??
       data.total_attended ??
@@ -228,11 +228,94 @@ function normalizeAttendanceSummary(payload: unknown): AttendanceSummary {
       summary.attended_count ??
       root.attended ??
       root.total_attended
-    ) || attendedFromRecords,
-    missed: coerceCount(
+    ) || attendedFromRecords;
+  const missedCount =
+    coerceCount(
       data.missed ?? data.absent ?? summary.missed ?? summary.absent ?? summary.missed_count ?? root.missed
-    ) || missedFromRecords,
+    ) || missedFromRecords;
+  const totalCount =
+    coerceCount(
+      data.total ??
+      data.total_attended ??
+      summary.total ??
+      summary.count ??
+      summary.total_events ??
+      root.total ??
+      root.total_attended
+    ) || records.length || attendedCount + missedCount;
+
+  return {
+    total: totalCount,
+    attended: attendedCount,
+    missed: missedCount,
     records,
+  };
+}
+
+function getRecentAttendanceRecords(): AttendanceRecord[] {
+  try {
+    const raw = localStorage.getItem(RECENT_ATTENDANCE_STORAGE_KEY);
+    if (!raw) {
+      return [];
+    }
+
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is AttendanceRecord => Boolean(item && typeof item === "object"))
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentAttendanceRecord(record: AttendanceRecord): void {
+  const existing = getRecentAttendanceRecords();
+  const identity = `${record.event_id || ""}:${record.event_code || ""}:${record.event_name}`;
+  const deduped = existing.filter((item) => {
+    const itemIdentity = `${item.event_id || ""}:${item.event_code || ""}:${item.event_name}`;
+    return itemIdentity !== identity;
+  });
+
+  localStorage.setItem(
+    RECENT_ATTENDANCE_STORAGE_KEY,
+    JSON.stringify([record, ...deduped].slice(0, 20))
+  );
+}
+
+function mergeRecentAttendanceRecords(summary: AttendanceSummary): AttendanceSummary {
+  const recent = getRecentAttendanceRecords();
+  if (!recent.length) {
+    return summary;
+  }
+
+  const mergedRecords = [...summary.records];
+
+  for (const record of recent) {
+    const alreadyPresent = mergedRecords.some((item) => {
+      if (record.event_id && item.event_id && record.event_id === item.event_id) {
+        return true;
+      }
+
+      if (record.event_code && item.event_code && record.event_code === item.event_code) {
+        return true;
+      }
+
+      return item.event_name === record.event_name && item.status === record.status;
+    });
+
+    if (!alreadyPresent) {
+      mergedRecords.unshift(record);
+    }
+  }
+
+  const attended = mergedRecords.filter((record) => record.status === "attended").length;
+  const missed = mergedRecords.filter((record) => record.status === "missed").length;
+
+  return {
+    total: Math.max(summary.total, mergedRecords.length, attended + missed),
+    attended: Math.max(summary.attended, attended),
+    missed: Math.max(summary.missed, missed),
+    records: mergedRecords,
   };
 }
 
@@ -252,7 +335,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
 export async function getMyAttendance(): Promise<AttendanceSummary> {
   const res = await authorizedFetch(`${BASE_URL}/attendance/my-attendance/`);
   const payload = await handleResponse<unknown>(res);
-  return normalizeAttendanceSummary(payload);
+  return mergeRecentAttendanceRecords(normalizeAttendanceSummary(payload));
 }
 
 /**
@@ -272,7 +355,8 @@ export async function submitAttendanceCheckIn(
   eventCode: string,
   payload: string,
   latitude: number,
-  longitude: number
+  longitude: number,
+  location?: string
 ): Promise<AttendanceCheckInResponse> {
   const res = await authorizedFetch(`${BASE_URL}/attendance/check-in/`, {
     method: "POST",
@@ -281,8 +365,23 @@ export async function submitAttendanceCheckIn(
       payload,
       latitude,
       longitude,
+      location,
     }),
   });
 
-  return handleResponse<AttendanceCheckInResponse>(res);
+  const result = await handleResponse<AttendanceCheckInResponse>(res);
+  const now = new Date().toISOString();
+
+  saveRecentAttendanceRecord({
+    id: `local-${eventCode}-${Date.now()}`,
+    event_id: result.event_id || "",
+    event_code: eventCode,
+    event_name: result.event || `Event ${eventCode}`,
+    event_date: now,
+    event_location: location || "",
+    status: "attended",
+    marked_at: now,
+  });
+
+  return result;
 }
