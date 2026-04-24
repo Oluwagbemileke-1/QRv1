@@ -26,12 +26,54 @@ from urllib.parse import urlencode
 User = get_user_model() # Get the custom user model defined in users/models.py
 
 
-def build_frontend_verify_redirect(status_value, message):
-    query = urlencode({
-        "status": status_value,
-        "message": message,
-    })
+def build_frontend_verify_link(raw_token):
+    query = urlencode({"token": raw_token})
     return f"{settings.FRONTEND_URL.rstrip('/')}/verify-email?{query}"
+
+
+def verify_email_token(token):
+    token_hash = EmailVerification.hash_token(token)
+    try:
+        verification = EmailVerification.objects.get(token_hash=token_hash)
+    except EmailVerification.DoesNotExist:
+        return {
+            "status": "invalid",
+            "message": "Invalid verification link",
+        }, status.HTTP_400_BAD_REQUEST
+
+    user = verification.user
+
+    if verification.is_expired():
+        verification.delete()
+        return {
+            "status": "expired",
+            "message": "Verification link expired. Please request a new verification email.",
+        }, status.HTTP_400_BAD_REQUEST
+
+    if user.is_verified and user.is_active:
+        return {
+            "status": "already_verified",
+            "message": "Your account is already verified. You can log in now.",
+        }, status.HTTP_200_OK
+
+    if verification.is_verified or verification.used:
+        return {
+            "status": "already_verified",
+            "message": "Your account is already verified. You can log in now.",
+        }, status.HTTP_200_OK
+
+    verification.used = True
+    verification.is_verified = True
+    verification.save(update_fields=["used", "is_verified"])
+
+    user.is_active = True
+    user.is_verified = True
+    user.save(update_fields=["is_active", "is_verified"])
+    send_welcome_email(user.email, user.first_name)
+    return {
+        "status": "success",
+        "message": "Email verified successfully. You can log in now.",
+    }, status.HTTP_200_OK
 
 
 def is_superuser_request(request):
@@ -65,7 +107,7 @@ def register(request):
 
 
        EmailVerification.objects.create(user=user,token_hash=hashed)
-       verification_link = f"{settings.BACKEND_URL.rstrip('/')}/api/users/verify-email/{raw_token}/"
+       verification_link = build_frontend_verify_link(raw_token)
        try:
            email_sent = verify_email_task(user.first_name, verification_link, user.email)
        except Exception as e:
@@ -103,33 +145,38 @@ def register(request):
 )
 @api_view(["GET"])
 def verify_email(request, token):
-    token_hash = EmailVerification.hash_token(token)
-    try:
-        verification = EmailVerification.objects.get(token_hash=token_hash)
-    except EmailVerification.DoesNotExist:
-        return redirect(build_frontend_verify_redirect("invalid", "Invalid verification link"))
+    # Backward compatibility for older backend links: redirect to frontend without consuming token.
+    return redirect(build_frontend_verify_link(token))
 
-    user = verification.user
 
-    if verification.is_expired():
-        verification.delete()
-        return redirect(build_frontend_verify_redirect("expired", "Verification link expired. Please request a new verification email."))
-    
-    if user.is_verified and user.is_active:
-        return redirect(build_frontend_verify_redirect("already_verified", "Your account is already verified. You can log in now."))
-    
-    if verification.is_verified or verification.used:
-        return redirect(build_frontend_verify_redirect("already_verified", "Your account is already verified. You can log in now."))
-    
-    verification.used = True
-    verification.is_verified = True
-    verification.save(update_fields=["used", "is_verified"])
+@swagger_auto_schema(
+    method='post',
+    tags=["👤USERS"],
+    operation_summary="Confirm Verify Email",
+    operation_description="Verify the user's email using token sent in request body.",
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'token': openapi.Schema(type=openapi.TYPE_STRING),
+        },
+        required=['token']
+    )
+)
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def verify_email_confirm(request):
+    token = request.data.get("token")
+    if not token:
+        return Response(
+            {
+                "status": "error",
+                "message": "Token is required",
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
-    user.is_active = True
-    user.is_verified = True
-    user.save(update_fields=["is_active", "is_verified"])
-    send_welcome_email(user.email, user.first_name)
-    return redirect(build_frontend_verify_redirect("success", "Email verified successfully. You can log in now."))
+    payload, code = verify_email_token(token)
+    return Response(payload, status=code)
 
 @swagger_auto_schema(
     method='post',
@@ -174,7 +221,7 @@ def resend_verification(request):
     raw_token = EmailVerification.generate_token()
     hashed = EmailVerification.hash_token(raw_token)
     EmailVerification.objects.create(user=user, token_hash=hashed)
-    verification_link = f"{settings.BACKEND_URL.rstrip('/')}/api/users/verify-email/{raw_token}/"
+    verification_link = build_frontend_verify_link(raw_token)
     resend_verify_email_task(user.first_name, verification_link, user.email)
 
     return Response({"message": "Verification email resent","email": user.email}, status=status.HTTP_200_OK)
