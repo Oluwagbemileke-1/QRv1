@@ -185,13 +185,6 @@ def get_scan_access_result(user, event, userlat=None, userlon=None, ip_address=N
             "status": status.HTTP_403_FORBIDDEN,
         }
 
-    if ip_address and device_info and Attendance.objects.filter(
-        event=event,
-        ip_address=ip_address,
-        device_info=device_info,
-    ).exists():
-        return {"allowed": False, "message": "This device already checked in for this event", "status": status.HTTP_403_FORBIDDEN}
-
     return {"allowed": True, "message": "Scan allowed", "status": status.HTTP_200_OK}
 
 
@@ -227,7 +220,15 @@ def check_in(request):
         return Response({"error": access["message"]}, status=access["status"])
 
     # Validate QR with .NET API
-    validation = validate_qr_code(payload, request.user.username, event_code)
+    validation = validate_qr_code(
+        payload,
+        request.user.username,
+        event_code,
+        ip_address=ip,
+        location=event.location_name,
+        latitude=userlat,
+        longitude=userlon,
+    )
     if not validation['valid']:
         if validation['fraud_detected']:
             return Response({"error": validation['message']}, status=status.HTTP_403_FORBIDDEN)

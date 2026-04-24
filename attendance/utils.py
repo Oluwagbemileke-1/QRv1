@@ -51,7 +51,15 @@ def generate_qr_code(event_id, event_code):
         return None
 
 
-def validate_qr_code(qr_data, username, event_code):
+def validate_qr_code(
+    qr_data,
+    username,
+    event_code,
+    ip_address=None,
+    location=None,
+    latitude=None,
+    longitude=None,
+):
     """
     Call .NET API to validate QR code and check for fraud
     """
@@ -60,9 +68,20 @@ def validate_qr_code(qr_data, username, event_code):
         'payload': qr_data,
         'username': username,
         'eventCode': event_code,
+        'location': location,
+        'latitude': latitude,
+        'longitude': longitude,
     }
+    headers = {}
+    if ip_address:
+        headers['X-Forwarded-For'] = ip_address
     try:
-        response = requests.post(url, json=payload, timeout=DOTNET_API_TIMEOUT)
+        response = requests.post(
+            url,
+            json=payload,
+            headers=headers,
+            timeout=DOTNET_API_TIMEOUT,
+        )
         try:
             data = response.json()
         except ValueError:
