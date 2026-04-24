@@ -1,18 +1,18 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import VerifyEmail from "./pages/VerifyEmail";
-import ForgotPassword from "./pages/ForgotPassword";
-import Dashboard from "./pages/Dashboard";
-import AttendancePage from "./pages/AttendancePage";
-import CheckInPage from "./pages/CheckInPage";
-import ProfilePage from "./pages/ProfilePage";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import ProtectedRoute from "./components/ProtectedRoute";
 import AdminDashboard from "./pages/AdminDashboard";
-import AdminEvents from "./pages/AdminEvents";
 import AdminEventDetail from "./pages/AdminEventDetail.tsx";
+import AdminEvents from "./pages/AdminEvents";
 import AdminEventSection from "./pages/AdminEventSection";
 import AdminUsers from "./pages/AdminUsers";
-import ProtectedRoute from "./components/ProtectedRoute";
+import AttendancePage from "./pages/AttendancePage";
+import CheckInPage from "./pages/CheckInPage";
+import Dashboard from "./pages/Dashboard";
+import ForgotPassword from "./pages/ForgotPassword";
+import Login from "./pages/Login";
+import ProfilePage from "./pages/ProfilePage";
+import Register from "./pages/Register";
+import VerifyEmail from "./pages/VerifyEmail";
 
 function ScanAwareRedirect({ fallbackTo }: { fallbackTo: string }) {
   const location = useLocation();
@@ -31,48 +31,106 @@ function ScanAwareRedirect({ fallbackTo }: { fallbackTo: string }) {
   return <Navigate to={fallbackTo} replace />;
 }
 
-function AppFallback({ fallbackTo }: { fallbackTo: string }) {
-  const location = useLocation();
-
-  if (location.pathname === "/verify-email" || location.pathname.startsWith("/verify-email/")) {
-    return <VerifyEmail />;
-  }
-
-  return <ScanAwareRedirect fallbackTo={fallbackTo} />;
-}
-
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Route table kept explicit so static-host deep links stay predictable. */}
         <Route path="/" element={<ScanAwareRedirect fallbackTo="/login" />} />
 
-        {/* ── Public ── */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/verify-email/:token" element={<VerifyEmail />} />
         <Route path="/verify-email/*" element={<VerifyEmail />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* ── User routes ── */}
-        <Route path="/dashboard" element={<ProtectedRoute requiredRole="user"><Dashboard /></ProtectedRoute>} />
-        <Route path="/attendance" element={<ProtectedRoute requiredRole="user"><AttendancePage /></ProtectedRoute>} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute requiredRole="user">
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/attendance"
+          element={
+            <ProtectedRoute requiredRole="user">
+              <AttendancePage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/check-in" element={<CheckInPage />} />
         <Route path="/checkin" element={<ScanAwareRedirect fallbackTo="/check-in" />} />
         <Route path="/check_in" element={<ScanAwareRedirect fallbackTo="/check-in" />} />
         <Route path="/event-check-in" element={<ScanAwareRedirect fallbackTo="/check-in" />} />
-        <Route path="/profile" element={<ProtectedRoute requiredRole="user"><ProfilePage /></ProtectedRoute>} />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute requiredRole="user">
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* ── Admin routes ── */}
-        <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
-        <Route path="/admin/events" element={<ProtectedRoute requiredRole="admin"><AdminEvents /></ProtectedRoute>} />
-        <Route path="/admin/events/:eventId" element={<ProtectedRoute requiredRole="admin"><AdminEventDetail /></ProtectedRoute>} />
-        <Route path="/admin/attendance" element={<ProtectedRoute requiredRole="admin"><AdminEventSection section="attendance" /></ProtectedRoute>} />
-        <Route path="/admin/analytics" element={<ProtectedRoute requiredRole="admin"><AdminEventSection section="analytics" /></ProtectedRoute>} />
-        <Route path="/admin/fraud" element={<ProtectedRoute requiredRole="admin"><AdminEventSection section="fraud" /></ProtectedRoute>} />
-        <Route path="/admin/users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/events"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminEvents />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/events/:eventId"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminEventDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/attendance"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminEventSection section="attendance" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/analytics"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminEventSection section="analytics" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/fraud"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminEventSection section="fraud" />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminUsers />
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="*" element={<AppFallback fallbackTo="/login" />} />
+        <Route path="*" element={<ScanAwareRedirect fallbackTo="/login" />} />
       </Routes>
     </BrowserRouter>
   );
