@@ -6,6 +6,7 @@ class AttendanceCheckInSerializer(serializers.Serializer):
     latitude = serializers.FloatField(required=True)
     longitude = serializers.FloatField(required=True)
     event_code = serializers.CharField()
+    location = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     payload = serializers.CharField(required=False, allow_blank=False)
 
     def validate(self, attrs):
@@ -41,6 +42,7 @@ class AttendanceSerializer(serializers.ModelSerializer):
             "scan_time",
             "ip_address",
             "device_info",
+            "location",
             "latitude",
             "longitude",
         )

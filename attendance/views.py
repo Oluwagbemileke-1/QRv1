@@ -205,6 +205,7 @@ def check_in(request):
     data = serializer.validated_data
     event_code = data["event_code"]
     payload = data["payload"]
+    location = (data.get("location") or "").strip()
     userlat = data.get("latitude")
     userlon = data.get("longitude")
     try:
@@ -225,7 +226,7 @@ def check_in(request):
         request.user.username,
         event_code,
         ip_address=ip,
-        location=event.location_name,
+        location=location or event.location_name,
         latitude=userlat,
         longitude=userlon,
     )
@@ -239,11 +240,21 @@ def check_in(request):
         event=event,
         ip_address=ip,
         device_info = device_info,
+        location=location or event.location_name,
         latitude=userlat,
         longitude=userlon
     )
 
-    return Response({"message":"Attendance recorded", "event":event.title,"ip":ip,"device":device_info}, status=status.HTTP_201_CREATED)
+    return Response(
+        {
+            "message": "Attendance recorded",
+            "event": event.title,
+            "ip": ip,
+            "device": device_info,
+            "location": attendance.location,
+        },
+        status=status.HTTP_201_CREATED,
+    )
 
 @swagger_auto_schema(
     method='get',
