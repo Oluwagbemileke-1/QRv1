@@ -29,6 +29,13 @@ export interface MyEventAttendanceStatus {
   created_by: string;
 }
 
+export interface AttendanceCheckInResponse {
+  message: string;
+  event?: string;
+  ip?: string;
+  device?: string;
+}
+
 function extractErrorMessage(payload: unknown): string {
   if (payload == null) {
     return "";
@@ -255,4 +262,27 @@ export async function getMyAttendance(): Promise<AttendanceSummary> {
 export async function getMyEventAttendance(eventId: string): Promise<MyEventAttendanceStatus> {
   const res = await authorizedFetch(`${BASE_URL}/attendance/${eventId}/my-event-attendance/`);
   return handleResponse<MyEventAttendanceStatus>(res);
+}
+
+/**
+ * POST api/attendance/check-in/
+ * Creates an attendance record for the signed-in user after Django validates the QR via .NET.
+ */
+export async function submitAttendanceCheckIn(
+  eventCode: string,
+  payload: string,
+  latitude: number,
+  longitude: number
+): Promise<AttendanceCheckInResponse> {
+  const res = await authorizedFetch(`${BASE_URL}/attendance/check-in/`, {
+    method: "POST",
+    body: JSON.stringify({
+      event_code: eventCode,
+      payload,
+      latitude,
+      longitude,
+    }),
+  });
+
+  return handleResponse<AttendanceCheckInResponse>(res);
 }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getStoredUser, getUserDisplayName } from "../api/auth";
-import { submitScan } from "../api/dotnet";
+import { submitAttendanceCheckIn } from "../api/attendance";
 import "./UserPortal.css";
 
 async function reverseGeocode(latitude: number, longitude: number): Promise<string> {
@@ -164,15 +164,19 @@ export default function CheckInPage() {
       return;
     }
 
+    const { latitude, longitude } = coordinates;
+    if (latitude == null || longitude == null) {
+      setError("We need your current location to submit attendance for this event.");
+      return;
+    }
+
     setLoading(true);
     try {
-      const result = await submitScan(
-        payload,
-        user.username,
+      const result = await submitAttendanceCheckIn(
         normalizedEventCode,
-        locationNote.trim() || undefined,
-        coordinates.latitude,
-        coordinates.longitude
+        payload,
+        latitude,
+        longitude
       );
       setConfirmedCode(normalizedEventCode);
       setSuccess(
