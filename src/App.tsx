@@ -19,6 +19,20 @@ function ScanAwareRedirect({ fallbackTo }: { fallbackTo: string }) {
   const params = new URLSearchParams(location.search);
   const payload = params.get("payload") || "";
   const eventCode = params.get("event_code") || params.get("code") || "";
+  const verifyToken = params.get("token") || "";
+  const email = params.get("email") || "";
+  const next = params.get("next") || "";
+
+  if (verifyToken) {
+    const verifyParams = new URLSearchParams({ token: verifyToken });
+    if (email) {
+      verifyParams.set("email", email);
+    }
+    if (next) {
+      verifyParams.set("next", next);
+    }
+    return <Navigate to={`/verify-email?${verifyParams.toString()}`} replace />;
+  }
 
   if (payload) {
     const nextParams = new URLSearchParams({ payload });

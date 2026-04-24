@@ -8,6 +8,23 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      (function () {
+        const path = window.location.pathname;
+        const params = new URLSearchParams(window.location.search);
+
+        if ((path === "/verify-email" || path.startsWith("/verify-email/")) && !params.get("token")) {
+          const prefix = "/verify-email/";
+          if (path.startsWith(prefix)) {
+            const pathToken = decodeURIComponent(path.slice(prefix.length)).replace(/\/+$/, "");
+            if (pathToken) {
+              params.set("token", pathToken);
+              window.history.replaceState(null, "", `/verify-email?${params.toString()}`);
+            }
+          }
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
