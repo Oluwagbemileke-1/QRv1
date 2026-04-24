@@ -405,7 +405,8 @@ def update_user(request, id):
             updated_user.is_verified = False
             updated_user.is_active = False
             updated_user.save(update_fields=["is_verified", "is_active"])
-            issue_email_verification_for_user(updated_user)
+            verification_link = issue_email_verification_for_user(updated_user)
+            verify_email_task(updated_user.first_name, verification_link, updated_user.email)
             response_message = "User updated successfully. Please verify your new email address."
 
         response_serializer = AdminSerializer(updated_user) if is_superuser_request(request) else UserSerializer(updated_user)
