@@ -280,7 +280,9 @@ export default function AdminEvents() {
     }
   };
 
-  const STATUS_TABS = ["", "upcoming", "active", "past", ...(isSuperuser ? ["deleted"] : [])];
+  const canShowDeletedTab =
+    isSuperuser || statusFilter === "deleted" || events.some((event) => String(event.status).toLowerCase() === "deleted");
+  const STATUS_TABS = ["", "upcoming", "active", "past", ...(canShowDeletedTab ? ["deleted"] : [])];
 
   return (
     <div className="adm-wrapper">
