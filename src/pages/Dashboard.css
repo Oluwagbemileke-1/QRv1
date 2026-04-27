@@ -290,9 +290,36 @@
   padding: 1rem 0.25rem;
 }
 
+@media (max-width: 1040px) {
+  .dash-main {
+    padding: 2rem 1.25rem 3.5rem;
+  }
+
+  .dash-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .dash-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 900px) {
-  .dash-stats { grid-template-columns: repeat(3, 1fr); }
-  .dash-grid { grid-template-columns: 1fr; }
+  .dash-header {
+    padding: 0.9rem 1.1rem;
+  }
+
+  .dash-header-left,
+  .dash-user {
+    min-width: 0;
+  }
+
+  .dash-greeting {
+    max-width: 32vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 @media (max-width: 640px) {

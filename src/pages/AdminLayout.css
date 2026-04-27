@@ -267,6 +267,15 @@
 .adm-td--muted { color: #6b7280; }
 .adm-td--bold  { font-weight: 500; color: #f1f3f5; }
 
+.adm-table-wrap::-webkit-scrollbar {
+  height: 10px;
+}
+
+.adm-table-wrap::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.24);
+  border-radius: 999px;
+}
+
 /* ── Status badges ── */
 .adm-status {
   display: inline-block;
@@ -549,6 +558,52 @@
   color: #6b7280;
 }
 
+@media (max-width: 1100px) {
+  .adm-main {
+    padding: 2rem 1.25rem 3rem;
+  }
+
+  .adm-header {
+    padding: 0 1.35rem;
+  }
+
+  .adm-subnav {
+    padding: 0.25rem 1.35rem 0;
+  }
+
+  .adm-controls {
+    align-items: stretch;
+  }
+
+  .adm-controls > div:last-child {
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
+
+  .adm-search-wrap {
+    flex: 1 1 280px;
+  }
+
+  .adm-search {
+    width: 100%;
+  }
+
+  .adm-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .adm-table {
+    min-width: 760px;
+  }
+
+  .adm-th,
+  .adm-td {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .adm-stats  { grid-template-columns: repeat(2, 1fr); }
@@ -632,10 +687,6 @@
   .adm-btn--danger {
     justify-content: center;
   }
-  .adm-table-wrap {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
   .adm-table-wrap::-webkit-scrollbar {
     height: 8px;
   }
@@ -675,6 +726,9 @@
   }
   .adm-btn {
     width: 100%;
+  }
+  .adm-table {
+    min-width: 680px;
   }
   .adm-stats {
     gap: 0.7rem;

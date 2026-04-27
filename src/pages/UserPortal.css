@@ -215,6 +215,33 @@
   word-break: break-word;
 }
 
+@media (max-width: 980px) {
+  .user-header {
+    padding: 1rem 1.25rem;
+  }
+
+  .user-main {
+    width: min(100%, calc(100% - 1.5rem));
+    padding: 1.6rem 0 3.25rem;
+  }
+
+  .user-panel {
+    padding: 1.25rem;
+  }
+
+  .user-panel--narrow {
+    width: 100%;
+  }
+
+  .user-nav {
+    gap: 0.55rem;
+  }
+
+  .user-nav-link {
+    font-size: 0.92rem;
+  }
+}
+
 @media (max-width: 768px) {
   .user-header {
     flex-direction: column;
@@ -293,6 +320,9 @@
   }
   .user-nav {
     grid-template-columns: 1fr;
+  }
+  .user-nav-link {
+    width: 100%;
   }
   .user-panel {
     padding: 1rem;
