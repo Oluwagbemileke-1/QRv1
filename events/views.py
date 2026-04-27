@@ -284,7 +284,7 @@ def preview_assign(request, event_id):
 @permission_classes([IsAuthenticated])
 def list_events(request):
     if request.user.is_superuser:
-        events = Event.objects.filter(is_active=True).select_related('created_by').order_by('-date')
+        events = Event.objects.all().select_related('created_by').order_by('-date')
     elif request.user.role =="admin":
         events = Event.objects.filter(created_by=request.user, is_active=True).select_related('created_by').order_by('-date')
     else:
@@ -301,14 +301,20 @@ def list_events(request):
         events = events.filter(date=filter_date)
 
     status_filter = request.GET.get("status", "").lower()
-    if status_filter in {"upcoming", "active", "past"}:
-        upcoming, active, past = split_events_by_status(list(events))
-        status_map = {
-            "upcoming": upcoming,
-            "active": active,
-            "past": past,
-        }
-        events = status_map[status_filter]
+    if status_filter in {"upcoming", "active", "past", "deleted"}:
+        if status_filter == "deleted":
+            if not request.user.is_superuser:
+                return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
+            events = events.filter(is_active=False)
+        else:
+            active_events = events.filter(is_active=True)
+            upcoming, active, past = split_events_by_status(list(active_events))
+            status_map = {
+                "upcoming": upcoming,
+                "active": active,
+                "past": past,
+            }
+            events = status_map[status_filter]
 
     paginator = PageNumberPagination()
     result_page = paginator.paginate_queryset(events, request)
