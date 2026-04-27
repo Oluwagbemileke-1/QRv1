@@ -355,6 +355,10 @@ function buildAttendanceRecordFromScan(scan: ScanAttempt, event: Event | undefin
   };
 }
 
+function hasText(value: string | undefined | null): value is string {
+  return typeof value === "string" && value.length > 0;
+}
+
 async function mergeDotnetAttendance(summary: AttendanceSummary): Promise<AttendanceSummary> {
   const user = getStoredUser();
   if (!user?.username) {
@@ -369,10 +373,19 @@ async function mergeDotnetAttendance(summary: AttendanceSummary): Promise<Attend
 
     const allEvents = [...eventGroups.active, ...eventGroups.upcoming, ...eventGroups.past];
     const eventsById = new Map(allEvents.map((event) => [event.id, event]));
-    const mergedRecords = [...summary.records];
+    const visibleEventKeys = new Set(
+      allEvents.flatMap((event) => [event.id, event.event_code, event.title].filter(hasText))
+    );
+    const mergedRecords = summary.records.filter((record) => {
+      const keys = [record.event_id, record.event_code, record.event_name].filter(hasText);
+      return keys.some((key) => visibleEventKeys.has(key));
+    });
 
     scanAttempts.forEach((scan, index) => {
       const event = scan.eventId ? eventsById.get(scan.eventId) : undefined;
+      if (!event) {
+        return;
+      }
       const record = buildAttendanceRecordFromScan(scan, event, index);
       const alreadyPresent = mergedRecords.some((item) => {
         if (record.event_id && item.event_id && record.event_id === item.event_id) {

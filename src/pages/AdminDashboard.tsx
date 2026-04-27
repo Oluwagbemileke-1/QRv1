@@ -8,23 +8,27 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const user = getStoredUser();
   const [showWelcomeToast, setShowWelcomeToast] = useState(true);
-  const [stats, setStats] = useState({ total: 0, upcoming: 0, active: 0, past: 0 });
+  const [stats, setStats] = useState({ total: 0, upcoming: 0, active: 0, past: 0, deleted: 0 });
   const [loading, setLoading] = useState(true);
   const displayName = getUserDisplayName(user);
+  const isSuperuser = user?.is_superuser === true;
 
   useEffect(() => {
     getAllEventsList()
       .then((events) => {
+        const deleted = events.filter((e) => e.status === "Deleted").length;
+        const visibleEvents = isSuperuser ? events : events.filter((e) => e.status !== "Deleted");
         setStats({
-          total: events.length,
-          upcoming: events.filter((e) => e.status === "Upcoming").length,
-          active: events.filter((e) => e.status === "Active").length,
-          past: events.filter((e) => e.status === "Past").length,
+          total: isSuperuser ? events.length : visibleEvents.length,
+          upcoming: visibleEvents.filter((e) => e.status === "Upcoming").length,
+          active: visibleEvents.filter((e) => e.status === "Active").length,
+          past: visibleEvents.filter((e) => e.status === "Past").length,
+          deleted,
         });
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [isSuperuser]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -106,6 +110,12 @@ export default function AdminDashboard() {
         <div className="adm-header-left">
           <div className="adm-logo">QRAMS</div>
           <span className="adm-badge">Admin</span>
+          <nav className="adm-subnav" style={{ border: "none", padding: "0", background: "transparent", marginLeft: "1rem" }}>
+            <span className="adm-subnav-link adm-subnav-link--active">Dashboard</span>
+            <Link to="/admin/events" className="adm-subnav-link">Events</Link>
+            <Link to="/admin/users" className="adm-subnav-link">Users</Link>
+            <Link to="/admin/profile" className="adm-subnav-link">Profile</Link>
+          </nav>
         </div>
         <div className="adm-header-right">
           {user && <span className="adm-greeting">{displayName}</span>}
@@ -129,6 +139,7 @@ export default function AdminDashboard() {
             { label: "Upcoming", val: loading ? "—" : stats.upcoming, cls: "adm-stat--blue" },
             { label: "Active Now", val: loading ? "—" : stats.active, cls: "adm-stat--green" },
             { label: "Past", val: loading ? "—" : stats.past },
+            ...(isSuperuser ? [{ label: "Deleted", val: loading ? "—" : stats.deleted, cls: "adm-stat--red" }] : []),
           ].map((s) => (
             <div key={s.label} className={`adm-stat ${s.cls || ""}`}>
               <span className="adm-stat-num">{s.val}</span>

@@ -4,6 +4,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminEventDetail from "./pages/AdminEventDetail.tsx";
 import AdminEvents from "./pages/AdminEvents";
 import AdminEventSection from "./pages/AdminEventSection";
+import AdminProfilePage from "./pages/AdminProfilePage";
 import AdminUsers from "./pages/AdminUsers";
 import AttendancePage from "./pages/AttendancePage";
 import CheckInPage from "./pages/CheckInPage";
@@ -140,6 +141,14 @@ export default function App() {
           element={
             <ProtectedRoute requiredRole="admin">
               <AdminUsers />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/profile"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminProfilePage />
             </ProtectedRoute>
           }
         />

@@ -1,4 +1,4 @@
-import { authorizedFetch } from "./auth";
+import { authorizedFetch, getStoredUser } from "./auth";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "https://qr-attendance-api-smj1.onrender.com/api";
  
@@ -72,6 +72,23 @@ export interface UserEventGroups {
   past: Event[];
 }
 
+function isDeletedEvent(event: Event): boolean {
+  return String(event.status || "").trim().toLowerCase() === "deleted";
+}
+
+function canCurrentUserSeeDeletedEvents(): boolean {
+  const user = getStoredUser();
+  return user?.is_superuser === true;
+}
+
+function filterEventsForCurrentUser(events: Event[]): Event[] {
+  if (canCurrentUserSeeDeletedEvents()) {
+    return events;
+  }
+
+  return events.filter((event) => !isDeletedEvent(event));
+}
+
 function extractErrorMessage(payload: unknown): string {
   if (payload == null) {
     return "";
@@ -110,9 +127,9 @@ function normalizeEventGroups(payload: unknown): UserEventGroups {
   };
 
   return {
-    active: readEvents("active", "active_events", "activeEvents"),
-    upcoming: readEvents("upcoming", "upcoming_events", "upcomingEvents"),
-    past: readEvents("past", "past_events", "pastEvents", "previous"),
+    active: filterEventsForCurrentUser(readEvents("active", "active_events", "activeEvents")),
+    upcoming: filterEventsForCurrentUser(readEvents("upcoming", "upcoming_events", "upcomingEvents")),
+    past: filterEventsForCurrentUser(readEvents("past", "past_events", "pastEvents", "previous")),
   };
 }
  
@@ -170,7 +187,7 @@ export async function getAllEventsList(params?: {
     page += 1;
   } while (collected.length < totalCount);
 
-  return collected;
+  return filterEventsForCurrentUser(collected);
 }
  
 /** GET api/events/<uuid>/ */

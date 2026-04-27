@@ -73,6 +73,7 @@ function AdminHeader({ onLogout, user }: { onLogout: () => void; user: ReturnTyp
           <Link to="/admin/dashboard" className="adm-subnav-link">Dashboard</Link>
           <span className="adm-subnav-link adm-subnav-link--active">Events</span>
           <Link to="/admin/users" className="adm-subnav-link">Users</Link>
+          <Link to="/admin/profile" className="adm-subnav-link">Profile</Link>
         </nav>
       </div>
       <div className="adm-header-right">
@@ -262,7 +263,7 @@ export default function AdminEvents() {
     }
   };
 
-  const STATUS_TABS = ["", "upcoming", "active", "past"];
+  const STATUS_TABS = ["", "upcoming", "active", "past", ...(isSuperuser ? ["deleted"] : [])];
 
   return (
     <div className="adm-wrapper">

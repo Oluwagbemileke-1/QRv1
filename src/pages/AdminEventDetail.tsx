@@ -681,6 +681,12 @@ export default function AdminEventDetail() {
         <div className="adm-header-left">
           <div className="adm-logo">QRAMS</div>
           <span className="adm-badge">Admin</span>
+          <nav className="adm-subnav" style={{ border: "none", padding: "0", background: "transparent", marginLeft: "1rem" }}>
+            <Link to="/admin/dashboard" className="adm-subnav-link">Dashboard</Link>
+            <Link to="/admin/events" className="adm-subnav-link adm-subnav-link--active">Events</Link>
+            <Link to="/admin/users" className="adm-subnav-link">Users</Link>
+            <Link to="/admin/profile" className="adm-subnav-link">Profile</Link>
+          </nav>
         </div>
         <div className="adm-header-right">
           {user && <span className="adm-greeting">{displayName}</span>}

@@ -39,6 +39,7 @@ export default function AdminUsers() {
             <Link to="/admin/dashboard" className="adm-subnav-link">Dashboard</Link>
             <Link to="/admin/events" className="adm-subnav-link">Events</Link>
             <span className="adm-subnav-link adm-subnav-link--active">Users</span>
+            <Link to="/admin/profile" className="adm-subnav-link">Profile</Link>
           </nav>
         </div>
         <div className="adm-header-right">

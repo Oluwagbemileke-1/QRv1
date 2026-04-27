@@ -75,6 +75,7 @@ export default function AdminEventSection({ section }: { section: AdminSectionKi
             <Link to="/admin/dashboard" className="adm-subnav-link">Dashboard</Link>
             <Link to="/admin/events" className="adm-subnav-link">Events</Link>
             <Link to="/admin/users" className="adm-subnav-link">Users</Link>
+            <Link to="/admin/profile" className="adm-subnav-link">Profile</Link>
             <span className="adm-subnav-link adm-subnav-link--active">{copy.title}</span>
           </nav>
         </div>
