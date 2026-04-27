@@ -88,6 +88,27 @@ QRAMS.
     send_email_task(email, subject, message)
 
 
+def send_creator_event_status_email(first_name, title, description, date, start_time, end_time, location_name, event_code, email, action="updated"):
+    subject = f"Your event was {action} successfully"
+    message = f"""
+Hello {first_name},
+
+Your event "{title}" was {action} successfully.
+
+Description: {description}
+Date: {date}
+Time: {start_time} - {end_time}
+Location: {location_name}
+Event Code: {event_code}
+
+Please check the app for the latest details.
+
+Thanks,
+QRAMS.
+    """
+    send_email_task(email, subject, message)
+
+
 def send_bulk_event_update_email(event_id, reason="updated"):
     from events.models import Event
 
@@ -97,20 +118,15 @@ def send_bulk_event_update_email(event_id, reason="updated"):
         event.attendees.exclude(email__isnull=True).exclude(email='').values_list('email', flat=True)
     )
     recipient_emails = set(attendee_emails)
-    if event.created_by and event.created_by.email:
-        recipient_emails.add(event.created_by.email)
 
     if not recipient_emails:
         return
 
     for email in recipient_emails:
         first_name = "there"
-        if event.created_by and email == event.created_by.email:
-            first_name = event.created_by.first_name or event.created_by.username
-        else:
-            user = event.attendees.filter(email=email).first()
-            if user:
-                first_name = user.first_name or user.username
+        user = event.attendees.filter(email=email).first()
+        if user:
+            first_name = user.first_name or user.username
 
         send_event_update_email(
             first_name=first_name,
@@ -124,3 +140,25 @@ def send_bulk_event_update_email(event_id, reason="updated"):
             email=email,
             reason=reason
         )
+
+
+def send_creator_event_update_email(event_id, action="updated"):
+    from events.models import Event
+
+    event = Event.objects.select_related("created_by").get(id=event_id)
+
+    if not event.created_by or not event.created_by.email:
+        return
+
+    send_creator_event_status_email(
+        first_name=event.created_by.first_name or event.created_by.username,
+        title=event.title,
+        description=event.description,
+        date=event.date,
+        start_time=event.start_time,
+        end_time=event.end_time,
+        location_name=event.location_name,
+        event_code=event.event_code,
+        email=event.created_by.email,
+        action=action,
+    )
