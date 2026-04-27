@@ -1,28 +1,46 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { logout, getStoredUser, getUserDisplayName } from "../api/auth";
+import { getStoredUser, getUserDisplayName, logout } from "../api/auth";
 import { getAllEventsList } from "../api/events";
 import "./AdminLayout.css";
+
+type DashboardStats = {
+  total: number;
+  upcoming: number;
+  active: number;
+  past: number;
+  deleted: number;
+};
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const user = getStoredUser();
+  const isSuperuser = user?.is_superuser === true;
   const [showWelcomeToast, setShowWelcomeToast] = useState(true);
-  const [stats, setStats] = useState({ total: 0, upcoming: 0, active: 0, past: 0, deleted: 0 });
+  const [stats, setStats] = useState<DashboardStats>({
+    total: 0,
+    upcoming: 0,
+    active: 0,
+    past: 0,
+    deleted: 0,
+  });
   const [loading, setLoading] = useState(true);
   const displayName = getUserDisplayName(user);
-  const isSuperuser = user?.is_superuser === true;
 
   useEffect(() => {
     getAllEventsList()
       .then((events) => {
-        const deleted = events.filter((e) => e.status === "Deleted").length;
-        const visibleEvents = isSuperuser ? events : events.filter((e) => e.status !== "Deleted");
+        const deleted = events.filter((event) => String(event.status).toLowerCase() === "deleted").length;
+        const visibleEvents = isSuperuser
+          ? events
+          : events.filter((event) => String(event.status).toLowerCase() !== "deleted");
+        const shouldIncludeDeletedInTotal = isSuperuser || deleted > 0;
+
         setStats({
-          total: isSuperuser ? events.length : visibleEvents.length,
-          upcoming: visibleEvents.filter((e) => e.status === "Upcoming").length,
-          active: visibleEvents.filter((e) => e.status === "Active").length,
-          past: visibleEvents.filter((e) => e.status === "Past").length,
+          total: shouldIncludeDeletedInTotal ? events.length : visibleEvents.length,
+          upcoming: visibleEvents.filter((event) => String(event.status).toLowerCase() === "upcoming").length,
+          active: visibleEvents.filter((event) => String(event.status).toLowerCase() === "active").length,
+          past: visibleEvents.filter((event) => String(event.status).toLowerCase() === "past").length,
           deleted,
         });
       })
@@ -104,6 +122,16 @@ export default function AdminDashboard() {
     },
   ];
 
+  const statCards = [
+    { label: "Total Events", val: loading ? "-" : stats.total },
+    { label: "Upcoming", val: loading ? "-" : stats.upcoming, cls: "adm-stat--blue" },
+    { label: "Active Now", val: loading ? "-" : stats.active, cls: "adm-stat--green" },
+    { label: "Past", val: loading ? "-" : stats.past },
+    ...((isSuperuser || stats.deleted > 0)
+      ? [{ label: "Deleted", val: loading ? "-" : stats.deleted, cls: "adm-stat--red" }]
+      : []),
+  ];
+
   return (
     <div className="adm-wrapper">
       <header className="adm-header">
@@ -132,29 +160,21 @@ export default function AdminDashboard() {
           <p className="adm-sub">Manage events, users, attendance and fraud checks as {displayName}.</p>
         </div>
 
-        {/* Stat strip */}
         <div className="adm-stats">
-          {[
-            { label: "Total Events", val: loading ? "—" : stats.total },
-            { label: "Upcoming", val: loading ? "—" : stats.upcoming, cls: "adm-stat--blue" },
-            { label: "Active Now", val: loading ? "—" : stats.active, cls: "adm-stat--green" },
-            { label: "Past", val: loading ? "—" : stats.past },
-            ...(isSuperuser ? [{ label: "Deleted", val: loading ? "—" : stats.deleted, cls: "adm-stat--red" }] : []),
-          ].map((s) => (
-            <div key={s.label} className={`adm-stat ${s.cls || ""}`}>
-              <span className="adm-stat-num">{s.val}</span>
-              <span className="adm-stat-label">{s.label}</span>
+          {statCards.map((stat) => (
+            <div key={stat.label} className={`adm-stat ${stat.cls || ""}`}>
+              <span className="adm-stat-num">{stat.val}</span>
+              <span className="adm-stat-label">{stat.label}</span>
             </div>
           ))}
         </div>
 
-        {/* Nav cards */}
         <div className="adm-cards">
-          {navCards.map((c) => (
-            <Link key={c.label} to={c.to} className="adm-card">
-              <div className="adm-card-icon">{c.icon}</div>
-              <h3 className="adm-card-title">{c.label}</h3>
-              <p className="adm-card-desc">{c.desc}</p>
+          {navCards.map((card) => (
+            <Link key={card.label} to={card.to} className="adm-card">
+              <div className="adm-card-icon">{card.icon}</div>
+              <h3 className="adm-card-title">{card.label}</h3>
+              <p className="adm-card-desc">{card.desc}</p>
             </Link>
           ))}
         </div>

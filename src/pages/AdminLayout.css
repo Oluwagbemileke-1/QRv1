@@ -233,10 +233,54 @@
   overflow: hidden;
 }
 
+.adm-table-wrap--scroll {
+  overflow-x: auto;
+}
+
 .adm-table {
   width: 100%;
   border-collapse: collapse;
   min-width: 880px;
+}
+
+.adm-table--events {
+  min-width: 980px;
+}
+
+.adm-table--events .adm-th:nth-child(1),
+.adm-table--events .adm-td:nth-child(1) {
+  width: 20%;
+}
+
+.adm-table--events .adm-th:nth-child(2),
+.adm-table--events .adm-td:nth-child(2) {
+  width: 10%;
+}
+
+.adm-table--events .adm-th:nth-child(3),
+.adm-table--events .adm-td:nth-child(3) {
+  width: 15%;
+  white-space: nowrap;
+}
+
+.adm-table--events .adm-th:nth-child(4),
+.adm-table--events .adm-td:nth-child(4) {
+  width: 32%;
+}
+
+.adm-table--events .adm-th:nth-child(5),
+.adm-table--events .adm-td:nth-child(5) {
+  width: 9%;
+}
+
+.adm-table--events .adm-th:nth-child(6),
+.adm-table--events .adm-td:nth-child(6) {
+  width: 8%;
+}
+
+.adm-table--events .adm-th:nth-child(7),
+.adm-table--events .adm-td:nth-child(7) {
+  width: 12%;
 }
 
 .adm-th {
