@@ -18,6 +18,7 @@ namespace QRSystem.API.Services.Implementations
             _httpClient = httpClient;
             _logger = logger;
             _internalToken = configuration["InternalService:Token"] ?? string.Empty;
+            _httpClient.Timeout = TimeSpan.FromSeconds(12);
         }
 
         public async Task<(bool Allowed, string Message)> ValidateScanAccessAsync(
@@ -85,6 +86,11 @@ namespace QRSystem.API.Services.Implementations
                 }
 
                 return (allowed, message);
+            }
+            catch (TaskCanceledException ex)
+            {
+                _logger.LogError(ex, "Django validate-scan-access timed out for username {Username}", username);
+                return (false, "Validation service unavailable");
             }
             catch (Exception ex)
             {

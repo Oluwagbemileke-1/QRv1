@@ -216,6 +216,22 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                     longitude
                 );
 
+                if (string.Equals(access.Message, "Validation service unavailable", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogWarning(
+                        "Django validation unavailable while processing scan for Username: {Username}, EventId: {EventId}",
+                        username,
+                        eventId
+                    );
+
+                    return new ScanResponseDto
+                    {
+                        Result = ScanResults.ServiceUnavailable,
+                        Message = "Attendance validation is temporarily unavailable. Please try again.",
+                        ScannedAt = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, _watZone)
+                    };
+                }
+
                 if (!access.Allowed)
                 {
                     await _fraudService.LogFraudAsync(
@@ -283,6 +299,7 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                 var scans = await _scanRepository.GetBySessionAsync(eventId);
                 var result = scans.Select(s => new ScanAttemptDto
                 {
+                    EventId = s.EventId,
                     Username = s.Username,
                     IpAddress = s.IpAddress,
                     Result = s.Result,
@@ -308,6 +325,7 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
                 var scans = await _scanRepository.GetSuccessfulScansBySessionAsync(eventId);
                 var result = scans.Select(s => new ScanAttemptDto
                 {
+                    EventId = s.EventId,
                     Username = s.Username,
                     IpAddress = s.IpAddress,
                     Result = s.Result,
@@ -322,6 +340,30 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementation
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching successful scans for EventId {EventId}", eventId);
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<ScanAttemptDto>> GetSuccessfulScansForUserAsync(string username)
+        {
+            try
+            {
+                var scans = await _scanRepository.GetSuccessfulScansByUsernameAsync(username);
+                return scans.Select(s => new ScanAttemptDto
+                {
+                    EventId = s.EventId,
+                    Username = s.Username,
+                    IpAddress = s.IpAddress,
+                    Result = s.Result,
+                    Location = s.Location,
+                    Latitude = s.Latitude,
+                    Longitude = s.Longitude,
+                    ScannedAt = TimeZoneInfo.ConvertTimeFromUtc(s.ScannedAt, _watZone)
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching successful scans for Username: {Username}", username);
                 throw;
             }
         }

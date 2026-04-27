@@ -60,6 +60,16 @@ namespace QRSystem.API.Controllers
                     return StatusCode(403, GenericResponse<object>.Failure(result.Message, "403"));
                 }
 
+                if (result.Result == ScanResults.ServiceUnavailable)
+                {
+                    _logger.LogWarning(
+                        "Scan validation service unavailable for Username: {Username}, IP: {IpAddress}",
+                        request.Username,
+                        ipAddress
+                    );
+                    return StatusCode(503, GenericResponse<object>.Failure(result.Message, "503"));
+                }
+
                 _logger.LogWarning("Scan failed for Username: {Username}", request.Username);
                 return BadRequest(GenericResponse<object>.Failure(result.Message, "400"));
             }
@@ -100,6 +110,23 @@ namespace QRSystem.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching successful scans for EventId: {EventId}", eventId);
+                return StatusCode(500, GenericResponse<object>.Failure("An error occurred while fetching successful scans", "500"));
+            }
+        }
+
+        [HttpGet("user/{username}/successful")]
+        public async Task<IActionResult> GetSuccessfulScansForUser(string username)
+        {
+            try
+            {
+                _logger.LogInformation("Fetching successful scans for Username: {Username}", username);
+                var scans = await _scanService.GetSuccessfulScansForUserAsync(username);
+                _logger.LogInformation("Retrieved {Count} successful scans for Username: {Username}", scans.Count(), username);
+                return Ok(GenericResponse<object>.Success(scans, "Successful scans retrieved successfully"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching successful scans for Username: {Username}", username);
                 return StatusCode(500, GenericResponse<object>.Failure("An error occurred while fetching successful scans", "500"));
             }
         }

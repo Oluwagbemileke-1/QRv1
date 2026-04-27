@@ -47,6 +47,13 @@ namespace QRSystem.API.Infrastructure.Repositories.Implementations
                 .OrderByDescending(s => s.ScannedAt)
                 .ToListAsync();
 
+        public async Task<IEnumerable<ScanAttempt>> GetSuccessfulScansByUsernameAsync(string username)
+            => await _context.ScanAttempts
+                .Where(s => s.Username == username
+                            && s.Result == ScanResults.Success)
+                .OrderByDescending(s => s.ScannedAt)
+                .ToListAsync();
+
         public async Task<int> GetUniqueIpCountAsync(Guid eventId)
             => await _context.ScanAttempts
                 .Where(s => s.EventId == eventId)

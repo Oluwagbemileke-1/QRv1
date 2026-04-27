@@ -8,5 +8,6 @@
         public const string Fraud = "Fraud";
         public const string InvalidPayload = "InvalidPayload";
         public const string NotFound = "NotFound";
+        public const string ServiceUnavailable = "ServiceUnavailable";
     }
 }

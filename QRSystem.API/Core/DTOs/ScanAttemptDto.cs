@@ -2,6 +2,7 @@
 {
     public class ScanAttemptDto
     {
+        public Guid EventId { get; set; }
         public string Username { get; set; } = string.Empty;
         public string IpAddress { get; set; } = string.Empty;
         public string Result { get; set; } = string.Empty;

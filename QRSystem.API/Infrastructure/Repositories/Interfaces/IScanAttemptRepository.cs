@@ -9,6 +9,7 @@ namespace QRSystem.API.Infrastructure.Repositories.Interfaces
         Task<bool> UserAlreadyScannedAsync(string username, Guid eventId);
         Task<IEnumerable<ScanAttempt>> GetBySessionAsync(Guid eventId);
         Task<IEnumerable<ScanAttempt>> GetSuccessfulScansBySessionAsync(Guid eventId);
+        Task<IEnumerable<ScanAttempt>> GetSuccessfulScansByUsernameAsync(string username);
         Task<int> GetUniqueIpCountAsync(Guid eventId);
         Task<IEnumerable<ScanAttempt>> GetByIpAddressAsync(string ipAddress);
     }
