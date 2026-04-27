@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, PasswordResetOTP
+from .models import User, PasswordResetOTP, EmailVerification, ChangeEmailVerification
 
 
 class CustomUserAdmin(UserAdmin):
@@ -68,6 +68,47 @@ class PasswordResetOTPAdmin(admin.ModelAdmin):
         return "Active"
 
     is_active_display.short_description = "Status"
+
+    def time_left_display(self, obj):
+        return f"{obj.time_left()}s left"
+
+    time_left_display.short_description = "Time Left"
+
+
+@admin.register(EmailVerification)
+class EmailVerificationAdmin(admin.ModelAdmin):
+    list_display = (
+        'user',
+        'is_verified',
+        'used',
+        'time_left_display',
+        'created_at',
+    )
+    list_filter = ('is_verified', 'used', 'created_at')
+    search_fields = ('user__username', 'user__email')
+    ordering = ('-created_at',)
+    readonly_fields = ('token_hash', 'created_at', 'time_left_display')
+
+    def time_left_display(self, obj):
+        return f"{obj.time_left()}s left"
+
+    time_left_display.short_description = "Time Left"
+
+
+@admin.register(ChangeEmailVerification)
+class ChangeEmailVerificationAdmin(admin.ModelAdmin):
+    list_display = (
+        'user',
+        'new_email',
+        'is_verified',
+        'used',
+        'time_left_display',
+        'created_at',
+    )
+    list_filter = ('is_verified', 'used', 'created_at')
+    search_fields = ('user__username', 'user__email', 'new_email')
+    ordering = ('-created_at',)
+    readonly_fields = ('token_hash', 'created_at', 'time_left_display')
 
     def time_left_display(self, obj):
         return f"{obj.time_left()}s left"
