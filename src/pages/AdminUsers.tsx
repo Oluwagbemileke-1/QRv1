@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { logout, getStoredUser, getUserDisplayName, listAllUsers } from "../api/auth";
 import type { UserProfile } from "../api/auth";
+import { exportRowsToCsv, exportRowsToPdf, type ExportRow } from "../utils/export";
 import "./AdminLayout.css";
 
 export default function AdminUsers() {
@@ -16,6 +17,16 @@ export default function AdminUsers() {
   const [roleFilter, setRoleFilter] = useState("");
 
   const handleLogout = async () => { await logout(); navigate("/login"); };
+
+  const buildUserRows = (): ExportRow[] =>
+    users.map((entry, index) => ({
+      No: index + 1,
+      Name: `${entry.first_name} ${entry.last_name}`.trim(),
+      Username: entry.username,
+      Email: entry.email,
+      Phone: entry.phone || "-",
+      Role: entry.role || "user",
+    }));
 
   const load = useCallback(() => {
     listAllUsers(search, roleFilter)
@@ -70,17 +81,35 @@ export default function AdminUsers() {
               </button>
             ))}
           </div>
-          <div className="adm-search-wrap">
-            <svg className="adm-search-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.3" />
-              <path d="M9.5 9.5l3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-            </svg>
-            <input className="adm-search" placeholder="Search users..." value={search}
-              onChange={(e) => {
-                setLoading(true);
-                setError("");
-                setSearch(e.target.value);
-              }} />
+          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+            <div className="adm-search-wrap">
+              <svg className="adm-search-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.3" />
+                <path d="M9.5 9.5l3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+              </svg>
+              <input className="adm-search" placeholder="Search users..." value={search}
+                onChange={(e) => {
+                  setLoading(true);
+                  setError("");
+                  setSearch(e.target.value);
+                }} />
+            </div>
+            <button className="adm-btn adm-btn--ghost" disabled={loading || users.length === 0} onClick={() => exportRowsToCsv("users.csv", buildUserRows())}>
+              Export CSV
+            </button>
+            <button
+              className="adm-btn adm-btn--ghost"
+              disabled={loading || users.length === 0}
+              onClick={() => {
+                try {
+                  exportRowsToPdf("QRAMS Users Export", `Role filter: ${roleFilter || "all"} | Total rows: ${users.length}`, buildUserRows());
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "Could not export PDF.");
+                }
+              }}
+            >
+              Export PDF
+            </button>
           </div>
         </div>
 

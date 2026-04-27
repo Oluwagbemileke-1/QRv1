@@ -5,6 +5,7 @@ import {
   getAllEventsList, createEvent, deleteEvent,
   type Event, type CreateEventPayload,
 } from "../api/events";
+import { exportRowsToCsv, exportRowsToPdf, type ExportRow } from "../utils/export";
 import "./AdminLayout.css";
 
 interface LocationSuggestion {
@@ -115,7 +116,6 @@ function formatDeletedAudit(event: Event) {
 
   return `Deleted by ${deletedBy} on ${deletedAt}`;
 }
-
 export default function AdminEvents() {
   const navigate = useNavigate();
   const user = getStoredUser();
@@ -282,6 +282,40 @@ export default function AdminEvents() {
 
   const canShowDeletedTab =
     isSuperuser || statusFilter === "deleted" || events.some((event) => String(event.status).toLowerCase() === "deleted");
+
+  const handleExportCsv = () => {
+    const rows: ExportRow[] = events.map((event) => ({
+      Title: event.title,
+      Creator: event.created_by?.fullname || "",
+      Date: event.date,
+      "Start Time": event.start_time,
+      "End Time": event.end_time,
+      Location: event.location_name || "",
+      Code: event.event_code,
+      Status: event.status,
+    }));
+
+    exportRowsToCsv(`events-${statusFilter || "all"}.csv`, rows);
+  };
+
+  const handleExportPdf = () => {
+    const rows: ExportRow[] = events.map((event) => ({
+      Title: event.title,
+      Creator: event.created_by?.fullname || "",
+      Date: event.date,
+      Time: `${event.start_time} - ${event.end_time}`,
+      Location: event.location_name || "-",
+      Code: event.event_code,
+      Status: event.status,
+    }));
+
+    try {
+      exportRowsToPdf("QRAMS Events Export", `Status filter: ${statusFilter || "all"} | Total rows: ${events.length}`, rows);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not export PDF.");
+    }
+  };
+
   const STATUS_TABS = ["", "upcoming", "active", "past", ...(canShowDeletedTab ? ["deleted"] : [])];
 
   return (
@@ -320,6 +354,12 @@ export default function AdminEvents() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
+            <button className="adm-btn adm-btn--ghost" onClick={handleExportCsv} disabled={loading || events.length === 0}>
+              Export CSV
+            </button>
+            <button className="adm-btn adm-btn--ghost" onClick={handleExportPdf} disabled={loading || events.length === 0}>
+              Export PDF
+            </button>
             <button className="adm-btn adm-btn--primary" onClick={() => setShowCreate(true)}>
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M7 2v10M2 7h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -332,8 +372,8 @@ export default function AdminEvents() {
         {error && <div className="adm-error">{error}</div>}
 
         {/* Table */}
-        <div className="adm-table-wrap">
-          <table className="adm-table">
+        <div className="adm-table-wrap adm-table-wrap--scroll">
+          <table className="adm-table adm-table--events">
             <thead>
               <tr>
                 <th className="adm-th">Event</th>

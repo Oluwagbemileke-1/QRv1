@@ -16,6 +16,7 @@ import {
   type FraudLog,
   type ScanAttempt,
 } from "../api/dotnet";
+import { exportRowsToCsv, exportRowsToPdf, type ExportRow } from "../utils/export";
 import "./AdminLayout.css";
 
 type Tab = "overview" | "qr" | "attendance" | "analytics" | "fraud";
@@ -185,6 +186,44 @@ export default function AdminEventDetail() {
   const [fraudError, setFraudError] = useState("");
 
   const handleLogout = async () => { await logout(); navigate("/login"); };
+
+  const buildAttendanceRows = (): ExportRow[] => {
+    const successfulByUsername = new Map(
+      successfulScans.map((scan) => [scan.username.toLowerCase(), scan])
+    );
+
+    return attendees.map((attendee) => {
+      const successfulScan = successfulByUsername.get(attendee.username.toLowerCase());
+      return {
+        Name: `${attendee.first_name} ${attendee.last_name}`.trim() || attendee.username,
+        Username: attendee.username,
+        Email: attendee.email,
+        Phone: attendee.phone || "-",
+        Role: attendee.role,
+        "Check-in Status": successfulScan ? "Checked in" : "Pending",
+        Location: successfulScan?.location || "-",
+        "Scanned At": successfulScan ? new Date(successfulScan.scannedAt).toLocaleString() : "-",
+      };
+    });
+  };
+
+  const buildAnalyticsRows = (): ExportRow[] =>
+    scans.map((scan) => ({
+      Username: scan.username,
+      Result: scan.result,
+      "IP Address": scan.ipAddress,
+      Location: scan.location || "-",
+      "Scanned At": new Date(scan.scannedAt).toLocaleString(),
+    }));
+
+  const buildFraudRows = (): ExportRow[] =>
+    fraudLogs.map((fraud) => ({
+      Username: fraud.username,
+      Reason: fraud.reason,
+      Details: fraud.details || "-",
+      IP: fraud.ipAddress,
+      "Detected At": new Date(fraud.detectedAt).toLocaleString(),
+    }));
 
   useEffect(() => {
     const requestedTab = searchParams.get("tab");
@@ -929,6 +968,28 @@ export default function AdminEventDetail() {
               <p className="adm-sub">Search users, select who to invite, preview the assignment, then send the invite.</p>
             </div>
 
+            <div className="adm-controls" style={{ marginBottom: "1rem" }}>
+              <p style={{ fontSize: 13, color: "#6b7280" }}>Export attendance records for this event.</p>
+              <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+                <button className="adm-btn adm-btn--ghost" disabled={buildAttendanceRows().length === 0} onClick={() => exportRowsToCsv(`attendance-${event?.event_code || eventId || "event"}.csv`, buildAttendanceRows())}>
+                  Export CSV
+                </button>
+                <button
+                  className="adm-btn adm-btn--ghost"
+                  disabled={buildAttendanceRows().length === 0}
+                  onClick={() => {
+                    try {
+                      exportRowsToPdf(`Attendance Export: ${event?.title || "Event"}`, `Event code: ${event?.event_code || "-"} | Rows: ${buildAttendanceRows().length}`, buildAttendanceRows());
+                    } catch (err) {
+                      setAssignError(err instanceof Error ? err.message : "Could not export PDF.");
+                    }
+                  }}
+                >
+                  Export PDF
+                </button>
+              </div>
+            </div>
+
             {/* Assign users */}
             <div style={{ background: "#111316", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "1.25rem", marginBottom: "1.5rem" }}>
               <p style={{ fontSize: 13, fontWeight: 500, color: "#d1d5db", marginBottom: "0.75rem" }}>Invite Users</p>
@@ -1134,6 +1195,27 @@ export default function AdminEventDetail() {
               <h2 className="adm-title">Analytics</h2>
               
             </div>
+            <div className="adm-controls" style={{ marginBottom: "1rem" }}>
+              <p style={{ fontSize: 13, color: "#6b7280" }}>Download the scan activity for this event.</p>
+              <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+                <button className="adm-btn adm-btn--ghost" disabled={scansLoading || scans.length === 0} onClick={() => exportRowsToCsv(`analytics-${event?.event_code || eventId || "event"}.csv`, buildAnalyticsRows())}>
+                  Export CSV
+                </button>
+                <button
+                  className="adm-btn adm-btn--ghost"
+                  disabled={scansLoading || scans.length === 0}
+                  onClick={() => {
+                    try {
+                      exportRowsToPdf(`Analytics Export: ${event?.title || "Event"}`, `Event code: ${event?.event_code || "-"} | Scan rows: ${scans.length}`, buildAnalyticsRows());
+                    } catch (err) {
+                      setScansError(err instanceof Error ? err.message : "Could not export PDF.");
+                    }
+                  }}
+                >
+                  Export PDF
+                </button>
+              </div>
+            </div>
             {statsError && <div className="adm-error">{statsError}</div>}
             {scansError && <div className="adm-error">{scansError}</div>}
             {statsLoading ? (
@@ -1196,6 +1278,27 @@ export default function AdminEventDetail() {
             <div className="adm-hero">
               <h2 className="adm-title">Fraud Logs</h2>
               <p className="adm-sub">All flagged scan attempts detected by the fraud system.</p>
+            </div>
+            <div className="adm-controls" style={{ marginBottom: "1rem" }}>
+              <p style={{ fontSize: 13, color: "#6b7280" }}>Download the fraud report for this event.</p>
+              <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+                <button className="adm-btn adm-btn--ghost" disabled={fraudLoading || fraudLogs.length === 0} onClick={() => exportRowsToCsv(`fraud-${event?.event_code || eventId || "event"}.csv`, buildFraudRows())}>
+                  Export CSV
+                </button>
+                <button
+                  className="adm-btn adm-btn--ghost"
+                  disabled={fraudLoading || fraudLogs.length === 0}
+                  onClick={() => {
+                    try {
+                      exportRowsToPdf(`Fraud Export: ${event?.title || "Event"}`, `Event code: ${event?.event_code || "-"} | Fraud rows: ${fraudLogs.length}`, buildFraudRows());
+                    } catch (err) {
+                      setFraudError(err instanceof Error ? err.message : "Could not export PDF.");
+                    }
+                  }}
+                >
+                  Export PDF
+                </button>
+              </div>
             </div>
             {fraudError && <div className="adm-error">{fraudError}</div>}
             <div className="adm-table-wrap">

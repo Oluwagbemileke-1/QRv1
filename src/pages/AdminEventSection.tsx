@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { getStoredUser, getUserDisplayName, logout } from "../api/auth";
 import { getAllEventsList, type Event } from "../api/events";
+import { exportRowsToCsv, exportRowsToPdf, type ExportRow } from "../utils/export";
 import "./AdminLayout.css";
 
 type AdminSectionKind = "attendance" | "analytics" | "fraud";
@@ -65,6 +66,17 @@ export default function AdminEventSection({ section }: { section: AdminSectionKi
     return "No events available yet.";
   }, [search]);
 
+  const buildSectionRows = (): ExportRow[] =>
+    events.map((event) => ({
+      Title: event.title,
+      Status: event.status,
+      Date: event.date,
+      Time: `${event.start_time} - ${event.end_time}`,
+      Location: event.location_name || "-",
+      Creator: event.created_by.fullname,
+      Code: event.event_code,
+    }));
+
   return (
     <div className="adm-wrapper">
       <header className="adm-header">
@@ -93,21 +105,39 @@ export default function AdminEventSection({ section }: { section: AdminSectionKi
 
         <div className="adm-controls">
           <p style={{ fontSize: 13, color: "#6b7280" }}>{events.length} event{events.length === 1 ? "" : "s"} ready for review</p>
-          <div className="adm-search-wrap">
-            <svg className="adm-search-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.3" />
-              <path d="M9.5 9.5l3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-            </svg>
-            <input
-              className="adm-search"
-              placeholder="Search events..."
-              value={search}
-              onChange={(e) => {
-                setLoading(true);
-                setError("");
-                setSearch(e.target.value);
+          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+            <div className="adm-search-wrap">
+              <svg className="adm-search-icon" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.3" />
+                <path d="M9.5 9.5l3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+              </svg>
+              <input
+                className="adm-search"
+                placeholder="Search events..."
+                value={search}
+                onChange={(e) => {
+                  setLoading(true);
+                  setError("");
+                  setSearch(e.target.value);
+                }}
+              />
+            </div>
+            <button className="adm-btn adm-btn--ghost" disabled={loading || events.length === 0} onClick={() => exportRowsToCsv(`${section}-events.csv`, buildSectionRows())}>
+              Export CSV
+            </button>
+            <button
+              className="adm-btn adm-btn--ghost"
+              disabled={loading || events.length === 0}
+              onClick={() => {
+                try {
+                  exportRowsToPdf(`QRAMS ${copy.title} Export`, `Filtered event rows: ${events.length}`, buildSectionRows());
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "Could not export PDF.");
+                }
               }}
-            />
+            >
+              Export PDF
+            </button>
           </div>
         </div>
 
