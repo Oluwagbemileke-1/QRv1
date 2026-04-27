@@ -99,6 +99,23 @@ function statusClass(s: string) {
   return m[s.toLowerCase()] || "";
 }
 
+function formatDeletedAudit(event: Event) {
+  const deletedBy = event.deleted_by?.fullname || event.deleted_by?.username || "Unknown";
+  if (!event.deleted_at) {
+    return `Deleted by ${deletedBy}`;
+  }
+
+  const deletedAt = new Date(event.deleted_at).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  return `Deleted by ${deletedBy} on ${deletedAt}`;
+}
+
 export default function AdminEvents() {
   const navigate = useNavigate();
   const user = getStoredUser();
@@ -344,6 +361,11 @@ export default function AdminEvents() {
                       {ev.title}
                     </span>
                     <span style={{ fontSize: 11, color: "#6b7280" }}>{ev.created_by.fullname}</span>
+                    {isSuperuser && String(ev.status).toLowerCase() === "deleted" && (
+                      <span style={{ display: "block", marginTop: 6, fontSize: 11, lineHeight: 1.45, color: "#fca5a5", whiteSpace: "normal" }}>
+                        {formatDeletedAudit(ev)}
+                      </span>
+                    )}
                   </td>
                   <td className="adm-td adm-td--muted">{ev.date}</td>
                   <td className="adm-td adm-td--muted" style={{ whiteSpace: "nowrap" }}>
@@ -366,12 +388,14 @@ export default function AdminEvents() {
                       >
                         Manage
                       </Link>
-                      <button
-                        className="adm-btn adm-btn--danger adm-btn--sm"
-                        onClick={() => setDeleteId(ev.id)}
-                      >
-                        Delete
-                      </button>
+                      {String(ev.status).toLowerCase() !== "deleted" && (
+                        <button
+                          className="adm-btn adm-btn--danger adm-btn--sm"
+                          onClick={() => setDeleteId(ev.id)}
+                        >
+                          Delete
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>

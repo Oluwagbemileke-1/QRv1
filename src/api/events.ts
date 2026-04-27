@@ -9,6 +9,12 @@ export interface EventCreatedBy {
   username: string;
   fullname: string;
 }
+
+export interface EventDeletedBy {
+  id: number;
+  username: string;
+  fullname: string;
+}
  
 export interface Event {
   id: string;
@@ -23,6 +29,8 @@ export interface Event {
   created_by: EventCreatedBy;
   created_at: string;
   is_active?: boolean;    // only in AllSerializer
+  deleted_at?: string | null;
+  deleted_by?: EventDeletedBy | null;
 }
  
 export interface CreateEventPayload {
