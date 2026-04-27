@@ -195,7 +195,7 @@ export async function getAllEventsList(params?: {
     page += 1;
   } while (collected.length < totalCount);
 
-  return filterEventsForCurrentUser(collected);
+  return collected;
 }
  
 /** GET api/events/<uuid>/ */
