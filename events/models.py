@@ -25,6 +25,14 @@ class Event(models.Model):
     event_code = models.CharField(max_length=6, unique=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    deleted_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="deleted_events",
+    )
 
     def save(self, *args, **kwargs):
             if not self.event_code:

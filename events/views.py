@@ -575,7 +575,9 @@ def delete_event(request, event_id):
 
     event_status_before_delete = event.status
     event.is_active = False
-    event.save()
+    event.deleted_at = timezone.now()
+    event.deleted_by = request.user
+    event.save(update_fields=["is_active", "deleted_at", "deleted_by"])
     send_creator_event_update_email(event.id, action="deleted")
 
     if event_status_before_delete != "past":
@@ -606,7 +608,7 @@ def allevents(request):
     if not is_event_admin(request.user):
         return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
 
-    events = Event.objects.all() if request.user.is_superuser else Event.objects.filter(created_by=request.user)
+    events = Event.objects.all() if request.user.is_superuser else Event.objects.filter(created_by=request.user, is_active=True)
     search = request.GET.get('search')
     if search:
         events = events.filter(
@@ -621,6 +623,8 @@ def allevents(request):
     status_filter = request.GET.get("status", "").lower()
     if status_filter in {"upcoming", "active", "past", "deleted"}:
         if status_filter == "deleted":
+            if not request.user.is_superuser:
+                return Response({"error": "Permission denied"}, status=status.HTTP_403_FORBIDDEN)
             events = events.filter(is_active=False)
         else:
             active_events = events.filter(is_active=True)

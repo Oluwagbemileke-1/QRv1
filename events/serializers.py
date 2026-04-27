@@ -7,6 +7,8 @@ class EventSerializer(serializers.ModelSerializer):
     start_time = serializers.TimeField(format="%I:%M %p")
     end_time = serializers.TimeField(format="%I:%M %p")
     created_by = serializers.SerializerMethodField()
+    deleted_by = serializers.SerializerMethodField()
+    deleted_at = serializers.DateTimeField(read_only=True, allow_null=True)
     status = serializers.SerializerMethodField()
 
     class Meta:
@@ -24,7 +26,9 @@ class EventSerializer(serializers.ModelSerializer):
             "event_code",
             "status",
             "created_by",
-            "created_at"
+            "created_at",
+            "deleted_at",
+            "deleted_by",
         )
         read_only_fields = ['created_by', 'created_at', 'event_code']
         extra_kwargs = {
@@ -40,6 +44,17 @@ class EventSerializer(serializers.ModelSerializer):
             "id": obj.created_by.id ,
             "username": obj.created_by.username,
             "fullname": fullname if fullname.strip() else obj.created_by.username
+        }
+
+    def get_deleted_by(self, obj):
+        if not obj.deleted_by:
+            return None
+
+        fullname = f"{obj.deleted_by.first_name} {obj.deleted_by.last_name}".strip()
+        return {
+            "id": obj.deleted_by.id,
+            "username": obj.deleted_by.username,
+            "fullname": fullname if fullname.strip() else obj.deleted_by.username,
         }
 
     def get_status(self, obj):
