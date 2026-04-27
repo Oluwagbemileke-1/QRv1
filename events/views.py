@@ -18,6 +18,7 @@ from events.tasks import (
     send_bulk_invitation_email,
     send_bulk_event_update_email,
     send_creator_event_update_email,
+    send_creator_invitation_summary_email,
 )
 import re
 from attendance.utils import generate_qr_code
@@ -403,6 +404,10 @@ def assign(request, event_id):
 
     
     send_bulk_invitation_email(
+        event.id,
+        list(new_users.values_list("id", flat=True))
+    )
+    send_creator_invitation_summary_email(
         event.id,
         list(new_users.values_list("id", flat=True))
     )

@@ -66,6 +66,46 @@ def send_bulk_invitation_email(event_id, user_ids):
         )
     print(f"Bulk email sent to {users.count()} recipients")  
 
+
+def send_creator_invitation_summary_email(event_id, user_ids):
+    from events.models import Event
+    from users.models import User
+
+    event = Event.objects.select_related("created_by").get(id=event_id)
+    creator = event.created_by
+
+    if not creator or not creator.email:
+        return
+
+    users = User.objects.filter(id__in=user_ids).order_by("first_name", "last_name", "username")
+    if not users.exists():
+        return
+
+    invited_lines = []
+    for index, user in enumerate(users, start=1):
+        fullname = f"{user.first_name} {user.last_name}".strip() or user.username
+        invited_lines.append(f"{index}. {fullname}")
+
+    subject = f"Invitations sent successfully for {event.title}"
+    message = f"""
+Hello {creator.first_name or creator.username},
+
+You have successfully invited the following people to "{event.title}":
+
+{chr(10).join(invited_lines)}
+
+Event details:
+Description: {event.description}
+Date: {event.date}
+Time: {event.start_time} - {event.end_time}
+Location: {event.location_name}
+Event Code: {event.event_code}
+
+Thanks,
+QRAMS.
+    """
+    send_email_task(creator.email, subject, message)
+
 def send_event_update_email(first_name, title, description, date, start_time, end_time, location_name, event_code, email, reason="updated"):
     subject = f"Event {reason}: {title}"
     message = f"""
