@@ -170,6 +170,9 @@ export default function CheckInPage() {
       return;
     }
 
+    const resolvedLocation =
+      locationNote.trim() || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+
     setLoading(true);
     try {
       const result = await submitAttendanceCheckIn(
@@ -177,7 +180,7 @@ export default function CheckInPage() {
         payload,
         latitude,
         longitude,
-        locationNote.trim() || undefined
+        resolvedLocation
       );
       setConfirmedCode(normalizedEventCode);
       setSuccess(
