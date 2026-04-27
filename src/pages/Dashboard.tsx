@@ -65,16 +65,56 @@ export default function Dashboard() {
     () => events.upcoming.length + events.active.length + events.past.length,
     [events]
   );
+  const attendanceEventKeys = useMemo(
+    () =>
+      new Set(
+        attendance.records.flatMap((record) =>
+          [record.event_id, record.event_code, record.event_name].filter(Boolean)
+        )
+      ),
+    [attendance.records]
+  );
+  const inferredMissedRecords = useMemo<AttendanceRecord[]>(
+    () =>
+      events.past
+        .filter((event) => {
+          const keys = [event.id, event.event_code, event.title].filter(Boolean);
+          return !keys.some((key) => attendanceEventKeys.has(key));
+        })
+        .map((event) => ({
+          id: `missed-${event.id}`,
+          event_id: event.id,
+          event_code: event.event_code,
+          event_name: event.title,
+          event_date: event.date,
+          event_location: event.location_name,
+          status: "missed" as const,
+        })),
+    [attendanceEventKeys, events.past]
+  );
+  const outcomeRecords = useMemo<AttendanceRecord[]>(
+    () => [...attendance.records, ...inferredMissedRecords],
+    [attendance.records, inferredMissedRecords]
+  );
+  const outcomeAttendedCount = useMemo(
+    () => outcomeRecords.filter((record) => record.status === "attended").length,
+    [outcomeRecords]
+  );
+  const outcomeMissedCount = useMemo(
+    () => outcomeRecords.filter((record) => record.status === "missed").length,
+    [outcomeRecords]
+  );
+  const outcomeTotalCount = outcomeAttendedCount + outcomeMissedCount;
   const recentAttendance = useMemo(
     () =>
-      [...attendance.records]
+      [...outcomeRecords]
         .sort((a, b) => {
           const left = new Date(a.marked_at || a.event_date || "").getTime();
           const right = new Date(b.marked_at || b.event_date || "").getTime();
           return right - left;
         })
         .slice(0, 6),
-    [attendance.records]
+    [outcomeRecords]
   );
 
   return (
@@ -130,19 +170,19 @@ export default function Dashboard() {
             <span className="dash-stat-label">Upcoming</span>
           </div>
           <div className="dash-stat dash-stat--green">
-            <span className="dash-stat-num">{loading ? "-" : attendance.attended}</span>
+            <span className="dash-stat-num">{loading ? "-" : outcomeAttendedCount}</span>
             <span className="dash-stat-label">Attended</span>
           </div>
           <div className="dash-stat dash-stat--red">
-            <span className="dash-stat-num">{loading ? "-" : attendance.missed}</span>
+            <span className="dash-stat-num">{loading ? "-" : outcomeMissedCount}</span>
             <span className="dash-stat-label">Missed</span>
           </div>
           <div className="dash-stat">
             <span className="dash-stat-num">
               {loading
                 ? "-"
-                : attendance.total > 0
-                  ? `${Math.round((attendance.attended / attendance.total) * 100)}%`
+                : outcomeTotalCount > 0
+                  ? `${Math.round((outcomeAttendedCount / outcomeTotalCount) * 100)}%`
                   : "0%"}
             </span>
             <span className="dash-stat-label">Rate</span>

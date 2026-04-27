@@ -236,6 +236,7 @@
 .adm-table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 880px;
 }
 
 .adm-th {
@@ -553,15 +554,135 @@
   .adm-stats  { grid-template-columns: repeat(2, 1fr); }
   .adm-cards  { grid-template-columns: repeat(2, 1fr); }
   .adm-main   { padding: 1.5rem 1rem 3rem; }
-  .adm-header { padding: 0.75rem 1rem; }
+  .adm-header {
+    padding: 1rem;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  .adm-header-left,
+  .adm-header-right {
+    width: 100%;
+  }
+  .adm-header-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.8rem;
+  }
+  .adm-header-right {
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .adm-logo {
+    min-width: 92px;
+    height: 48px;
+    font-size: 15px;
+    padding: 0 16px;
+  }
+  .adm-badge {
+    font-size: 10px;
+    padding: 5px 10px;
+  }
+  .adm-greeting {
+    max-width: 48vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .adm-signout {
+    padding: 9px 14px;
+    font-size: 14px;
+  }
+  .adm-subnav {
+    width: 100%;
+    margin-left: 0 !important;
+    padding: 0;
+    justify-content: space-between;
+    gap: 0.25rem;
+  }
+  .adm-subnav-link {
+    flex: 1 1 0;
+    text-align: center;
+    padding: 12px 8px 10px;
+    font-size: 15px;
+  }
   .adm-search { width: 100%; }
   .adm-search-wrap { width: 100%; }
-  .adm-controls { flex-direction: column; align-items: flex-start; }
+  .adm-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.85rem;
+  }
+  .adm-controls > div {
+    width: 100%;
+  }
+  .adm-controls > div:first-child {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem !important;
+  }
+  .adm-controls > div:last-child {
+    display: grid !important;
+    grid-template-columns: 1fr;
+    gap: 0.85rem !important;
+    align-items: stretch !important;
+  }
+  .adm-btn--primary,
+  .adm-btn--ghost,
+  .adm-btn--danger {
+    justify-content: center;
+  }
+  .adm-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .adm-table-wrap::-webkit-scrollbar {
+    height: 8px;
+  }
+  .adm-table-wrap::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.28);
+    border-radius: 999px;
+  }
   .adm-card--row { flex-direction: column; align-items: flex-start; }
-  .adm-subnav { padding: 0 1rem; }
+  .adm-field-row { grid-template-columns: 1fr; }
+  .adm-modal {
+    padding: 1.25rem;
+    border-radius: 16px;
+  }
 }
 
 @media (max-width: 480px) {
   .adm-cards { grid-template-columns: 1fr; }
   .adm-stats { grid-template-columns: repeat(2, 1fr); }
+  .adm-main { padding: 1.1rem 0.8rem 2.5rem; }
+  .adm-title { font-size: 22px; }
+  .adm-sub { font-size: 13px; }
+  .adm-header {
+    padding: 0.9rem 0.85rem;
+  }
+  .adm-header-right {
+    align-items: flex-start;
+  }
+  .adm-greeting {
+    max-width: 100%;
+    font-size: 12px;
+  }
+  .adm-subnav-link {
+    font-size: 14px;
+  }
+  .adm-controls > div:first-child {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .adm-btn {
+    width: 100%;
+  }
+  .adm-stats {
+    gap: 0.7rem;
+  }
+  .adm-stat {
+    padding: 1rem 0.95rem 0.9rem;
+  }
+  .adm-stat-num {
+    font-size: 24px;
+  }
 }
