@@ -18,6 +18,7 @@ export interface QrCodeData {
 }
  
 export interface ScanAttempt {
+  eventId?: string;
   username: string;
   ipAddress: string;
   result: string;         // "Success" | "Fraud" | "Expired" | "InvalidPayload" | "NotFound"
@@ -162,6 +163,14 @@ export async function getSuccessfulScans(eventId: string): Promise<ScanAttempt[]
     `/scan/event/${eventId}/successful`,
     {},
     "The successful check-in service is currently unreachable."
+  );
+}
+
+export async function getUserSuccessfulScans(username: string): Promise<ScanAttempt[]> {
+  return performNetFetch<ScanAttempt[]>(
+    `/scan/user/${encodeURIComponent(username)}/successful`,
+    {},
+    "The user attendance scan service is currently unreachable."
   );
 }
  

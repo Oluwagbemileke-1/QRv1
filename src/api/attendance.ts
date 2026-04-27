@@ -1,5 +1,6 @@
 import { authorizedFetch, getStoredUser } from "./auth";
-import { submitScan } from "./dotnet";
+import { getUserSuccessfulScans, submitScan, type ScanAttempt } from "./dotnet";
+import { getMyEvents, type Event } from "./events";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "https://qr-attendance-api-smj1.onrender.com/api";
 
@@ -321,6 +322,89 @@ function mergeRecentAttendanceRecords(summary: AttendanceSummary): AttendanceSum
   };
 }
 
+function normalizeEventDate(value: string): string {
+  if (!value) {
+    return value;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(value)) {
+    return value;
+  }
+
+  const parts = value.split("-");
+  if (parts.length === 3) {
+    const [day, month, year] = parts;
+    if (year?.length === 4) {
+      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+    }
+  }
+
+  return value;
+}
+
+function buildAttendanceRecordFromScan(scan: ScanAttempt, event: Event | undefined, index: number): AttendanceRecord {
+  return {
+    id: `scan-${scan.eventId || index}-${scan.scannedAt}`,
+    event_id: scan.eventId || event?.id || "",
+    event_code: event?.event_code,
+    event_name: event?.title || "Untitled event",
+    event_date: normalizeEventDate(event?.date || scan.scannedAt),
+    event_location: scan.location || event?.location_name || "",
+    status: "attended",
+    marked_at: scan.scannedAt,
+  };
+}
+
+async function mergeDotnetAttendance(summary: AttendanceSummary): Promise<AttendanceSummary> {
+  const user = getStoredUser();
+  if (!user?.username) {
+    return summary;
+  }
+
+  try {
+    const [eventGroups, scanAttempts] = await Promise.all([
+      getMyEvents(),
+      getUserSuccessfulScans(user.username),
+    ]);
+
+    const allEvents = [...eventGroups.active, ...eventGroups.upcoming, ...eventGroups.past];
+    const eventsById = new Map(allEvents.map((event) => [event.id, event]));
+    const mergedRecords = [...summary.records];
+
+    scanAttempts.forEach((scan, index) => {
+      const event = scan.eventId ? eventsById.get(scan.eventId) : undefined;
+      const record = buildAttendanceRecordFromScan(scan, event, index);
+      const alreadyPresent = mergedRecords.some((item) => {
+        if (record.event_id && item.event_id && record.event_id === item.event_id) {
+          return true;
+        }
+
+        if (record.event_code && item.event_code && record.event_code === item.event_code) {
+          return true;
+        }
+
+        return item.event_name === record.event_name && item.status === "attended";
+      });
+
+      if (!alreadyPresent) {
+        mergedRecords.unshift(record);
+      }
+    });
+
+    const attended = mergedRecords.filter((record) => record.status === "attended").length;
+    const missed = mergedRecords.filter((record) => record.status === "missed").length;
+
+    return {
+      total: Math.max(summary.total, mergedRecords.length, attended + missed),
+      attended: Math.max(summary.attended, attended),
+      missed: Math.max(summary.missed, missed),
+      records: mergedRecords,
+    };
+  } catch {
+    return summary;
+  }
+}
+
 async function handleResponse<T>(res: Response): Promise<T> {
   const data = await res.json();
   if (!res.ok) {
@@ -337,7 +421,8 @@ async function handleResponse<T>(res: Response): Promise<T> {
 export async function getMyAttendance(): Promise<AttendanceSummary> {
   const res = await authorizedFetch(`${BASE_URL}/attendance/my-attendance/`);
   const payload = await handleResponse<unknown>(res);
-  return mergeRecentAttendanceRecords(normalizeAttendanceSummary(payload));
+  const normalized = mergeRecentAttendanceRecords(normalizeAttendanceSummary(payload));
+  return mergeDotnetAttendance(normalized);
 }
 
 /**
