@@ -31,6 +31,9 @@ class AttendanceSerializer(serializers.ModelSerializer):
 
     user = serializers.SerializerMethodField()
     event = serializers.SerializerMethodField()
+    event_title = serializers.SerializerMethodField()
+    event_code = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
 
 
     class Meta:
@@ -39,12 +42,15 @@ class AttendanceSerializer(serializers.ModelSerializer):
             "id",
             "user",
             "event",
+            "event_title",
+            "event_code",
             "scan_time",
             "ip_address",
             "device_info",
             "location",
             "latitude",
             "longitude",
+            "status",
         )
 
     def get_user(self, obj):
@@ -59,8 +65,17 @@ class AttendanceSerializer(serializers.ModelSerializer):
         return {
             "id": obj.event.id,
             "title": obj.event.title,
+            "event_code": obj.event.event_code,
             "date": obj.event.date,
             "location": obj.event.location_name
         }
-    
+
+    def get_event_title(self, obj):
+        return obj.event.title
+
+    def get_event_code(self, obj):
+        return obj.event.event_code
+
+    def get_status(self, obj):
+        return "present"
 

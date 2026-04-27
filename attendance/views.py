@@ -18,7 +18,6 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib.pagesizes import landscape, A4,A3
 from datetime import timedelta
 from rest_framework.pagination import PageNumberPagination
-from django.db.models import Count
 from .utils import validate_qr_code
 
 HARD_CODED_ALLOWED_RADIUS_M = 150
@@ -282,38 +281,85 @@ def check_in(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def my_attendance(request):
-
-    records = Attendance.objects.filter(user=request.user).select_related("user", "event", "event__created_by").order_by("-scan_time")
+    attendance_records = Attendance.objects.filter(user=request.user).select_related("user", "event", "event__created_by").order_by("-scan_time")
+    assigned_events = Event.objects.filter(attendees=request.user, is_active=True).select_related("created_by").order_by("-date", "-start_time")
 
     event_id = request.GET.get("event_id")
     if event_id:
-        records = records.filter(event_id=event_id)
+        attendance_records = attendance_records.filter(event_id=event_id)
+        assigned_events = assigned_events.filter(id=event_id)
 
     if request.GET.get("this_week") == "true":
         today = timezone.now().date()
         start_week = today - timedelta(days=7)
-        records = records.filter(scan_time__date__gte=start_week)
-    
+        attendance_records = attendance_records.filter(scan_time__date__gte=start_week)
+        assigned_events = assigned_events.filter(date__gte=start_week)
+
+    attendance_by_event_id = {record.event_id: record for record in attendance_records}
+
+    rows = []
+    for event in assigned_events:
+        attendance = attendance_by_event_id.get(event.id)
+        # Show attended events immediately; show un-attended events once they are in the past.
+        if not attendance and event.status != "past":
+            continue
+
+        if attendance:
+            serialized = AttendanceSerializer(attendance).data
+            serialized["status"] = "present"
+            rows.append(serialized)
+            continue
+
+        rows.append(
+            {
+                "id": f"missed-{event.id}",
+                "user": {
+                    "id": request.user.id,
+                    "username": request.user.username,
+                    "fullname": f"{request.user.first_name} {request.user.last_name}".strip(),
+                    "email": request.user.email,
+                },
+                "event": {
+                    "id": event.id,
+                    "title": event.title,
+                    "event_code": event.event_code,
+                    "date": event.date,
+                    "location": event.location_name,
+                },
+                "event_title": event.title,
+                "event_code": event.event_code,
+                "scan_time": None,
+                "ip_address": None,
+                "device_info": None,
+                "location": event.location_name,
+                "latitude": event.latitude,
+                "longitude": event.longitude,
+                "status": "missed",
+            }
+        )
+
     paginator = PageNumberPagination()
-    page = paginator.paginate_queryset(records, request)
+    page = paginator.paginate_queryset(rows, request)
 
-    serializer = AttendanceSerializer(page, many=True)
+    total_attended = sum(1 for row in rows if row["status"] == "present")
+    total_missed = sum(1 for row in rows if row["status"] == "missed")
 
-    event_counts = dict(
-    records.values("event_id")
-    .annotate(total=Count("id"))
-    .values_list("event_id", "total")
-    )
+    event_counts = {}
+    for row in rows:
+        event_key = str(row["event"]["id"])
+        event_counts[event_key] = event_counts.get(event_key, 0) + 1
 
     return Response(
         {
             "count": paginator.page.paginator.count,
             "next": paginator.get_next_link(),
             "previous": paginator.get_previous_link(),
-            "total_attended": records.count(),
+            "total_events": len(rows),
+            "total_attended": total_attended,
+            "total_missed": total_missed,
             "per_event_count": event_counts,
-            "records": serializer.data,
-            "results": serializer.data,
+            "records": page,
+            "results": page,
         },
         status=status.HTTP_200_OK,
     )
