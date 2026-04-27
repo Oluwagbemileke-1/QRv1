@@ -110,11 +110,15 @@ async function requestTokenRefresh(): Promise<string | null> {
     });
 
     if (res.ok) {
-      const data = await res.json().catch(() => null) as { access?: string } | null;
+      const data = await res.json().catch(() => null) as { access?: string; refresh?: string } | null;
       const access = data?.access || "";
+      const nextRefresh = data?.refresh || "";
 
       if (access) {
         localStorage.setItem("token", access);
+        if (nextRefresh) {
+          localStorage.setItem("refresh", nextRefresh);
+        }
         return access;
       }
     }
