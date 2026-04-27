@@ -36,15 +36,40 @@ class RegisterSerializer(serializers.ModelSerializer):
         email = data.get("email")
         phone = data.get("phone")
 
-        # Only block if VERIFIED user exists
+        verified_errors = {}
         if User.objects.filter(username=username, is_verified=True).exists():
-            raise serializers.ValidationError({"username": "Username already exists."})
+            verified_errors["username"] = "Username already exists."
 
         if User.objects.filter(email=email, is_verified=True).exists():
-            raise serializers.ValidationError({"email": "Email already exists."})
+            verified_errors["email"] = "Email already exists."
 
         if phone and User.objects.filter(phone=phone, is_verified=True).exists():
-            raise serializers.ValidationError({"phone": "Phone number already exists."})
+            verified_errors["phone"] = "Phone number already exists."
+
+        if verified_errors:
+            raise serializers.ValidationError(verified_errors)
+
+        unverified_matches = []
+
+        username_match = User.objects.filter(username=username, is_verified=False).first()
+        if username_match:
+            unverified_matches.append(username_match)
+
+        email_match = User.objects.filter(email=email, is_verified=False).first()
+        if email_match:
+            unverified_matches.append(email_match)
+
+        phone_match = None
+        if phone:
+            phone_match = User.objects.filter(phone=phone, is_verified=False).first()
+            if phone_match:
+                unverified_matches.append(phone_match)
+
+        unique_match_ids = {match.id for match in unverified_matches}
+        if len(unique_match_ids) > 1:
+            raise serializers.ValidationError({
+                "detail": "An unverified account already exists with one of these details. Use matching details or complete verification first."
+            })
 
         if data.get("password") != data.get("password2"):
             raise serializers.ValidationError({"password": "Passwords do not match."})
@@ -61,12 +86,21 @@ class RegisterSerializer(serializers.ModelSerializer):
         # Force role to user
         validated_data['role'] = 'user' # Ensure that the role is set to 'user' for all new registrations, preventing users from assigning themselves admin roles
 
-        existing_user = User.objects.filter(email=email).first()
+        existing_user = (
+            User.objects.filter(
+                Q(email=email) |
+                Q(username=validated_data.get("username")) |
+                Q(phone=validated_data.get("phone"))
+            )
+            .filter(is_verified=False)
+            .first()
+        )
 
-        if existing_user and not existing_user.is_verified:
+        if existing_user:
             # reuse same user instead of creating new one
             user = existing_user
             user.username = validated_data.get("username")
+            user.email = email
             user.first_name = validated_data.get("first_name")
             user.last_name = validated_data.get("last_name")
             user.phone = validated_data.get("phone")

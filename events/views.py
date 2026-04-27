@@ -116,7 +116,7 @@ def create_event(request):
                 )
 
         event=serializer.save(created_by=request.user)
-        create_event_email(event.title,event.event_code,request.user.email,request.user.first_name)
+        create_event_email(event.title,event.description,event.event_code,request.user.email,request.user.first_name)
 
         return Response(
             {"message": "Event created successfully", "data": serializer.data},

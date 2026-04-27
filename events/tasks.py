@@ -1,12 +1,14 @@
 from notifications.tasks import send_email_task
 
-def create_event_email(title,event_code,email,first_name):
+def create_event_email(title,description,event_code,email,first_name):
 
     subject="Event Created Successfully"
     message=f"""
 Hi {first_name},
 
 Your event "{title}" has been created successfully.
+
+Event description: {description}
 
 Event Code: {event_code}
 
@@ -16,7 +18,7 @@ QRAMS.
     
     send_email_task(email, subject, message)
 
-def send_invitation_email(first_name,title,date,start_time,end_time,location_name,event_code,email):
+def send_invitation_email(first_name,title,description,date,start_time,end_time,location_name,event_code,email):
     subject=f"You've been invited to {title}"
     message=f"""
 Hello {first_name},
@@ -24,6 +26,7 @@ Hello {first_name},
 You have been invited to an event
 
 Event: {title}
+Description: {description}
 Date: {date}
 Time: {start_time} - {end_time}
 Location: {location_name}
@@ -53,6 +56,7 @@ def send_bulk_invitation_email(event_id, user_ids):
         send_invitation_email(
             user.first_name,
             event.title,
+            event.description,
             event.date,
             event.start_time,
             event.end_time,
@@ -62,7 +66,7 @@ def send_bulk_invitation_email(event_id, user_ids):
         )
     print(f"Bulk email sent to {users.count()} recipients")  
 
-def send_event_update_email(first_name, title, date, start_time, end_time, location_name, event_code, email, reason="updated"):
+def send_event_update_email(first_name, title, description, date, start_time, end_time, location_name, event_code, email, reason="updated"):
     subject = f"Event {reason}: {title}"
     message = f"""
 Hello {first_name},
@@ -70,6 +74,7 @@ Hello {first_name},
 An event you are connected to has been {reason}.
 
 Event: {title}
+Description: {description}
 Date: {date}
 Time: {start_time} - {end_time}
 Location: {location_name}
@@ -110,6 +115,7 @@ def send_bulk_event_update_email(event_id, reason="updated"):
         send_event_update_email(
             first_name=first_name,
             title=event.title,
+            description=event.description,
             date=event.date,
             start_time=event.start_time,
             end_time=event.end_time,

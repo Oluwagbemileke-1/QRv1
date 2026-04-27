@@ -305,11 +305,18 @@ def my_attendance(request):
     .values_list("event_id", "total")
     )
 
-    return paginator.get_paginated_response({
-        "total_attended": records.count(),
-        "per_event_count": event_counts,
-        "records": serializer.data
-    })
+    return Response(
+        {
+            "count": paginator.page.paginator.count,
+            "next": paginator.get_next_link(),
+            "previous": paginator.get_previous_link(),
+            "total_attended": records.count(),
+            "per_event_count": event_counts,
+            "records": serializer.data,
+            "results": serializer.data,
+        },
+        status=status.HTTP_200_OK,
+    )
 
 @swagger_auto_schema(
     method='get',
