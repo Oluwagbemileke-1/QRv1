@@ -445,57 +445,26 @@ export async function submitAttendanceCheckIn(
   longitude: number,
   location?: string
 ): Promise<AttendanceCheckInResponse> {
-  let result: AttendanceCheckInResponse;
-
-  try {
-    const res = await authorizedFetch(`${BASE_URL}/attendance/check-in/`, {
-      method: "POST",
-      body: JSON.stringify({
-        event_code: eventCode,
-        payload,
-        latitude,
-        longitude,
-        location,
-      }),
-    });
-
-    result = {
-      ...(await handleResponse<AttendanceCheckInResponse>(res)),
-      source: "django",
-    };
-  } catch (error) {
-    const message = error instanceof Error ? error.message.trim() : "";
-    const shouldRetryWithDotnet =
-      !message ||
-      message === "API error" ||
-      message === "Something went wrong." ||
-      message.toLowerCase().includes("server error");
-
-    if (!shouldRetryWithDotnet) {
-      throw error;
-    }
-
-    const user = getStoredUser();
-    if (!user?.username) {
-      throw error;
-    }
-
-    const scanResult = await submitScan(
-      payload,
-      user.username,
-      eventCode,
-      location,
-      latitude,
-      longitude
-    );
-
-    result = {
-      message: scanResult.message || "Attendance recorded successfully.",
-      event: `Event ${eventCode}`,
-      event_id: "",
-      source: "dotnet",
-    };
+  const user = getStoredUser();
+  if (!user?.username) {
+    throw new Error("Sign in first before completing check-in.");
   }
+
+  const scanResult = await submitScan(
+    payload,
+    user.username,
+    eventCode,
+    location,
+    latitude,
+    longitude
+  );
+
+  const result: AttendanceCheckInResponse = {
+    message: scanResult.message || "Attendance recorded successfully.",
+    event: `Event ${eventCode}`,
+    event_id: "",
+    source: "dotnet",
+  };
   const now = new Date().toISOString();
 
   saveRecentAttendanceRecord({
