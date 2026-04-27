@@ -246,6 +246,7 @@
 /* ── Search ── */
 .att-search-wrap {
     position: relative;
+    flex: 1 1 260px;
 }
 
 .att-search-icon {
@@ -266,7 +267,8 @@
     font-family: "DM Sans", sans-serif;
     color: #f1f3f5;
     outline: none;
-    width: 260px;
+    width: 100%;
+    min-width: 0;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -451,14 +453,6 @@
         width: 100%;
     }
 
-    .att-table-wrap {
-        overflow-x: auto;
-    }
-
-    .att-table {
-        min-width: 600px;
-    }
-
     .att-main {
         padding: 1.5rem 1rem 3rem;
     }
@@ -487,9 +481,15 @@
 
     .att-nav-links {
         width: 100%;
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        display: flex;
         gap: 0.55rem;
+        overflow-x: auto;
+        padding-bottom: 0.2rem;
+        scrollbar-width: none;
+    }
+
+    .att-nav-links::-webkit-scrollbar {
+        display: none;
     }
 
     .att-nav-link {
@@ -499,6 +499,8 @@
         min-height: 42px;
         text-align: center;
         padding: 0.75rem 0.6rem;
+        min-width: 132px;
+        flex: 0 0 auto;
     }
 
     .att-nav-right {
@@ -506,10 +508,111 @@
         justify-content: flex-start;
     }
 
+    .att-nav-user {
+        max-width: 100%;
+        font-size: 13px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
     .att-title-row {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.4rem;
+    }
+
+    .att-tabs {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 0.2rem;
+        scrollbar-width: none;
+    }
+
+    .att-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    .att-tab {
+        flex: 0 0 auto;
+    }
+
+    .att-table-wrap {
+        background: transparent;
+        border: none;
+        overflow: visible;
+    }
+
+    .att-table,
+    .att-table thead,
+    .att-table tbody,
+    .att-table tr,
+    .att-table th,
+    .att-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .att-table thead {
+        display: none;
+    }
+
+    .att-tr {
+        background: #111316;
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 16px;
+        padding: 0.2rem 0;
+        margin-bottom: 0.9rem;
+    }
+
+    .att-td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 0.9rem 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        text-align: right;
+    }
+
+    .att-td:last-child {
+        border-bottom: none;
+    }
+
+    .att-td::before {
+        content: attr(data-label);
+        color: #6b7280;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    .att-td--num {
+        display: none;
+    }
+
+    .att-td--name {
+        font-size: 1rem;
+        text-align: right;
+    }
+
+    .att-td--status {
+        text-align: right;
+    }
+
+    .att-empty {
+        display: block;
+        background: #111316;
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 16px;
+        margin-top: 0.25rem;
+    }
+
+    .skel--pill {
+        margin-left: 0;
     }
 }
 
@@ -526,8 +629,18 @@
         padding: 0.85rem 0.85rem;
     }
 
-    .att-nav-links {
-        grid-template-columns: 1fr;
+    .att-nav {
+        gap: 0.75rem;
+    }
+
+    .att-nav-left {
+        gap: 0.7rem;
+    }
+
+    .att-nav-logo {
+        width: 50px;
+        height: 50px;
+        font-size: 0.85rem;
     }
 
     .att-stats {
@@ -540,5 +653,25 @@
 
     .att-stat-num {
         font-size: 28px;
+    }
+
+    .att-tab {
+        padding: 0.75rem 1rem;
+    }
+
+    .att-td {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+        gap: 0.45rem;
+    }
+
+    .att-td::before {
+        margin-bottom: 0.1rem;
+    }
+
+    .att-td--name,
+    .att-td--status {
+        text-align: left;
     }
 }

@@ -26,11 +26,11 @@ function SkeletonRow({ index }: { index: number }) {
   return (
     <tr className="att-tr att-tr--skeleton">
       <td className="att-td att-td--num">{index}</td>
-      <td className="att-td"><div className="skel skel--title" /></td>
-      <td className="att-td"><div className="skel skel--short" /></td>
-      <td className="att-td"><div className="skel skel--short" /></td>
-      <td className="att-td"><div className="skel skel--med" /></td>
-      <td className="att-td"><div className="skel skel--pill" /></td>
+      <td className="att-td" data-label="Event"><div className="skel skel--title" /></td>
+      <td className="att-td" data-label="Date"><div className="skel skel--short" /></td>
+      <td className="att-td" data-label="Check-in Time"><div className="skel skel--short" /></td>
+      <td className="att-td" data-label="Location"><div className="skel skel--med" /></td>
+      <td className="att-td" data-label="Status"><div className="skel skel--pill" /></td>
     </tr>
   );
 }
@@ -207,17 +207,17 @@ export default function AttendancePage() {
                 filtered.map((record, i) => (
                   <tr key={record.id} className="att-tr">
                     <td className="att-td att-td--num">{i + 1}</td>
-                    <td className="att-td att-td--name">{record.event_name}</td>
-                    <td className="att-td att-td--muted">{formatDate(record.event_date)}</td>
-                    <td className="att-td att-td--muted">
+                    <td className="att-td att-td--name" data-label="Event">{record.event_name}</td>
+                    <td className="att-td att-td--muted" data-label="Date">{formatDate(record.event_date)}</td>
+                    <td className="att-td att-td--muted" data-label="Check-in Time">
                       {record.marked_at && record.status === "attended"
                         ? formatTime(record.marked_at)
                         : "—"}
                     </td>
-                    <td className="att-td att-td--muted">
+                    <td className="att-td att-td--muted" data-label="Location">
                       {record.event_location || "—"}
                     </td>
-                    <td className="att-td att-td--status">
+                    <td className="att-td att-td--status" data-label="Status">
                       <span className={`att-badge att-badge--${record.status}`}>
                         {record.status === "attended" ? "Present" : "Absent"}
                       </span>
