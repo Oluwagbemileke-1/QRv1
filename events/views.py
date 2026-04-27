@@ -24,6 +24,7 @@ import re
 from attendance.utils import generate_qr_code
 from django.conf import settings
 from urllib.parse import quote
+from notifications.audit import log_audit
 
 User = get_user_model()
 
@@ -124,6 +125,7 @@ def create_event(request):
 
         event=serializer.save(created_by=request.user)
         create_event_email(event.title,event.description,event.event_code,request.user.email,request.user.first_name)
+        log_audit("EVENT_CREATED", request=request, user=request.user, target_type="event", target_id=event.id, details={"title": event.title, "event_code": event.event_code})
 
         return Response(
             {"message": "Event created successfully", "data": serializer.data},
@@ -411,6 +413,14 @@ def assign(request, event_id):
         event.id,
         list(new_users.values_list("id", flat=True))
     )
+    log_audit(
+        "EVENT_USERS_ASSIGNED",
+        request=request,
+        user=request.user,
+        target_type="event",
+        target_id=event.id,
+        details={"added_user_ids": list(new_users.values_list("id", flat=True)), "count": new_users.count()},
+    )
 
     return Response({
         "message": "Assignment complete",
@@ -553,6 +563,14 @@ def update_event(request, event_id):
     change_reason = "recalibrated" if any(field in data for field in location_fields) else "updated"
     send_bulk_event_update_email(event.id, reason=change_reason)
     send_creator_event_update_email(event.id, action=change_reason)
+    log_audit(
+        "EVENT_UPDATED",
+        request=request,
+        user=request.user,
+        target_type="event",
+        target_id=event.id,
+        details={"reason": change_reason, "fields": list(data.keys())},
+    )
 
     return Response(
         {"message": "Event updated successfully", "data": serializer.data},
@@ -590,6 +608,14 @@ def delete_event(request, event_id):
     event.deleted_by = request.user
     event.save(update_fields=["is_active", "deleted_at", "deleted_by"])
     send_creator_event_update_email(event.id, action="deleted")
+    log_audit(
+        "EVENT_DELETED",
+        request=request,
+        user=request.user,
+        target_type="event",
+        target_id=event.id,
+        details={"title": event.title, "previous_status": event_status_before_delete},
+    )
 
     if event_status_before_delete != "past":
         send_bulk_event_update_email(event.id, reason="cancelled")

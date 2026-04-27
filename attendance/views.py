@@ -19,6 +19,7 @@ from reportlab.lib.pagesizes import landscape, A4,A3
 from datetime import timedelta
 from rest_framework.pagination import PageNumberPagination
 from .utils import validate_qr_code
+from notifications.audit import log_audit
 
 HARD_CODED_ALLOWED_RADIUS_M = 150
 
@@ -242,6 +243,14 @@ def check_in(request):
         location=location or event.location_name,
         latitude=userlat,
         longitude=userlon
+    )
+    log_audit(
+        "ATTENDANCE_RECORDED",
+        request=request,
+        user=request.user,
+        target_type="attendance",
+        target_id=attendance.id,
+        details={"event_id": str(event.id), "event_code": event.event_code},
     )
 
     return Response(

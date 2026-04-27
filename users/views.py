@@ -1,6 +1,6 @@
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.decorators import authentication_classes
+from rest_framework.decorators import authentication_classes, throttle_classes
 from rest_framework.response import Response
 from .serializers import RegisterSerializer, UserSerializer, ChangePasswordSerializer, AdminUserSerializer, UpdateSerializer,AdminSerializer, ForgotPasswordSerializer,VerifyOTPSerializer,ResetPasswordSerializer,ResendOTPSerializer
 from rest_framework.pagination import PageNumberPagination
@@ -22,6 +22,17 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.shortcuts import redirect
 from urllib.parse import urlencode
+from notifications.audit import log_audit
+from .throttles import (
+    RegisterRateThrottle,
+    LoginRateThrottle,
+    VerificationConfirmRateThrottle,
+    ResendVerificationRateThrottle,
+    ForgotPasswordRateThrottle,
+    VerifyOtpRateThrottle,
+    ResetPasswordRateThrottle,
+    ResendOtpRateThrottle,
+)
 
 
 User = get_user_model() # Get the custom user model defined in users/models.py
@@ -159,6 +170,7 @@ def is_verified_active_user(user):
 @api_view(['POST'])
 @authentication_classes([])
 @permission_classes([AllowAny])
+@throttle_classes([RegisterRateThrottle])
 def register(request):
     serializer = RegisterSerializer(data=request.data)
     # import pdb; pdb.set_trace()
@@ -175,18 +187,21 @@ def register(request):
            email_sent = False
 
        if email_sent:
+           log_audit("USER_REGISTERED", request=request, user=user, target_type="user", target_id=user.id, details={"email": user.email})
            return Response({
                "message": "User created successfully. Verification email sent.",
                "email": user.email,
                "next_step": "Check inbox or use resend verification if needed"
            }, status=status.HTTP_201_CREATED)
        else:
+           log_audit("USER_REGISTERED", request=request, user=user, target_type="user", target_id=user.id, status="INFO", details={"email": user.email, "email_sent": False})
            return Response({
                "message": "User created, but verification email failed.",
                "email": user.email,
                "next_step": "Contact support or resend verification"
            }, status=status.HTTP_202_ACCEPTED)
 
+    log_audit("USER_REGISTER_FAILED", request=request, target_type="user", status="FAILED", details={"errors": serializer.errors})
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @swagger_auto_schema(
@@ -248,6 +263,7 @@ def verify_change_email(request, token):
 @api_view(["POST"])
 @authentication_classes([])
 @permission_classes([AllowAny])
+@throttle_classes([VerificationConfirmRateThrottle])
 def verify_email_confirm(request):
     token = request.data.get("token")
     if not token:
@@ -260,6 +276,14 @@ def verify_email_confirm(request):
         )
 
     payload, code = verify_email_token(token)
+    log_audit(
+        "EMAIL_VERIFICATION_CONFIRM",
+        request=request,
+        target_type="email_verification",
+        target_id=token[:12],
+        status="SUCCESS" if code == status.HTTP_200_OK else "FAILED",
+        details={"result": payload.get("status")},
+    )
     return Response(payload, status=code)
 
 
@@ -279,6 +303,7 @@ def verify_email_confirm(request):
 @api_view(["POST"])
 @authentication_classes([])
 @permission_classes([AllowAny])
+@throttle_classes([VerificationConfirmRateThrottle])
 def verify_change_email_confirm(request):
     token = request.data.get("token")
     if not token:
@@ -291,6 +316,14 @@ def verify_change_email_confirm(request):
         )
 
     payload, code = verify_change_email_token(token)
+    log_audit(
+        "CHANGE_EMAIL_CONFIRM",
+        request=request,
+        target_type="change_email_verification",
+        target_id=token[:12],
+        status="SUCCESS" if code == status.HTTP_200_OK else "FAILED",
+        details={"result": payload.get("status")},
+    )
     return Response(payload, status=code)
 
 @swagger_auto_schema(
@@ -308,6 +341,7 @@ def verify_change_email_confirm(request):
 @api_view(["POST"])
 @authentication_classes([])
 @permission_classes([AllowAny])
+@throttle_classes([ResendVerificationRateThrottle])
 def resend_verification(request):
     email = request.data.get("email")
     try:
@@ -334,6 +368,7 @@ def resend_verification(request):
 
     verification_link = issue_email_verification_for_user(user)
     resend_verify_email_task(user.first_name, verification_link, user.email)
+    log_audit("EMAIL_VERIFICATION_RESENT", request=request, user=user, target_type="user", target_id=user.id, details={"email": user.email})
 
     return Response({"message": "Verification email resent","email": user.email}, status=status.HTTP_200_OK)
 
@@ -353,6 +388,7 @@ def resend_verification(request):
 @api_view(["POST"])
 @authentication_classes([])
 @permission_classes([AllowAny])
+@throttle_classes([ResendVerificationRateThrottle])
 def resend_change_email_verification(request):
     email = request.data.get("email")
     verification = ChangeEmailVerification.objects.select_related("user").filter(
@@ -371,6 +407,7 @@ def resend_change_email_verification(request):
 
     verification_link = issue_change_email_verification_for_user(verification.user, verification.new_email)
     verify_changed_email_task(verification.user.first_name, verification_link, verification.new_email)
+    log_audit("CHANGE_EMAIL_VERIFICATION_RESENT", request=request, user=verification.user, target_type="user", target_id=verification.user.id, details={"email": verification.new_email})
 
     return Response(
         {
@@ -399,23 +436,29 @@ def resend_change_email_verification(request):
 @api_view(['POST'])
 @authentication_classes([])
 @permission_classes([AllowAny])
+@throttle_classes([LoginRateThrottle])
 def login(request):
     username = request.data.get('username') 
     password = request.data.get('password')
     if not username or not password:
+        log_audit("USER_LOGIN_FAILED", request=request, target_type="user", status="FAILED", details={"reason": "missing_credentials", "identifier": username})
         return Response({"error": "Please provide both username and password"}, status=status.HTTP_400_BAD_REQUEST)
     
     user = User.objects.filter(Q(username=username) | Q(email=username) | Q(phone=username)).first() # allow users to login with either their username, email, or phone number by using a Q object to perform an OR query across these fields also used filter().first() to return the first matching user or None if no user is found, which allows us to handle the case where the identifier does not match any user without raising an exception. This provides a more graceful way to handle login attempts with invalid identifiers.
     if not user or not user.check_password(password): # check if a user was found and if the provided password matches the user's password
+        log_audit("USER_LOGIN_FAILED", request=request, target_type="user", status="FAILED", details={"reason": "invalid_credentials", "identifier": username})
         return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)  
     
     if not user.is_active:
+        log_audit("USER_LOGIN_FAILED", request=request, user=user, target_type="user", target_id=user.id, status="FAILED", details={"reason": "inactive"})
         return Response({"error":"Email not verified"}, status=status.HTTP_403_FORBIDDEN)
     
     if not user.is_verified:
+        log_audit("USER_LOGIN_FAILED", request=request, user=user, target_type="user", target_id=user.id, status="FAILED", details={"reason": "not_verified"})
         return Response({"error":"Email not verified"}, status=status.HTTP_403_FORBIDDEN)
     refresh = RefreshToken.for_user(user)
     update_last_login(None, user)
+    log_audit("USER_LOGIN_SUCCESS", request=request, user=user, target_type="user", target_id=user.id)
 
     return Response({
         "message": "Login successful",
@@ -453,8 +496,10 @@ def logout(request):
     try:
         token = RefreshToken(refresh_token)
         token.blacklist() # blacklists the refresh token, preventing it from being used again
+        log_audit("USER_LOGOUT", request=request, target_type="session", status="SUCCESS")
         return Response({"message": "Logout successful"}, status=status.HTTP_205_RESET_CONTENT)
     except Exception as e:
+        log_audit("USER_LOGOUT_FAILED", request=request, target_type="session", status="FAILED", details={"error": str(e)})
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 @swagger_auto_schema(
@@ -587,6 +632,15 @@ def update_user(request, id):
                 else "User updated successfully, but verification email could not be sent. Please use resend verification."
             )
 
+        log_audit(
+            "USER_UPDATED",
+            request=request,
+            user=request.user,
+            target_type="user",
+            target_id=updated_user.id,
+            details={"email_changed": email_changed, "fields": list(serializer.validated_data.keys())},
+        )
+
         response_serializer = AdminSerializer(updated_user) if is_superuser_request(request) else UserSerializer(updated_user)
         return Response(
             {
@@ -679,6 +733,7 @@ def change_password(request):
 @api_view(['POST'])
 @authentication_classes([])
 @permission_classes([AllowAny])
+@throttle_classes([ForgotPasswordRateThrottle])
 def forgot_password(request):
     serializer = ForgotPasswordSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -705,6 +760,7 @@ def forgot_password(request):
     otp_obj.set_otp(otp)
     otp_obj.save()
     send_otp(user.first_name,otp,user.email)
+    log_audit("PASSWORD_RESET_OTP_SENT", request=request, user=user, target_type="user", target_id=user.id, details={"identifier": identifier})
     
     
 
@@ -728,6 +784,7 @@ def forgot_password(request):
 @api_view(['POST'])
 @authentication_classes([])
 @permission_classes([AllowAny])
+@throttle_classes([VerifyOtpRateThrottle])
 def verify_otp(request):
     serializer = VerifyOTPSerializer(data=request.data)
     serializer.is_valid(raise_exception =True)
@@ -761,6 +818,7 @@ def verify_otp(request):
     otp_obj.used = True
     otp_obj.is_verified = True
     otp_obj.save(update_fields=['used','is_verified'])
+    log_audit("PASSWORD_RESET_OTP_VERIFIED", request=request, user=user, target_type="user", target_id=user.id)
 
     return Response({
         "status": "success",
@@ -786,6 +844,7 @@ def verify_otp(request):
 @api_view(['POST'])
 @authentication_classes([])
 @permission_classes([AllowAny])
+@throttle_classes([ResetPasswordRateThrottle])
 def reset_password(request):
 
     serializer = ResetPasswordSerializer(data=request.data)
@@ -816,6 +875,7 @@ def reset_password(request):
     user.set_password(new_password)
     user.save()
     PasswordResetOTP.objects.filter(user=user).delete()
+    log_audit("PASSWORD_RESET_COMPLETED", request=request, user=user, target_type="user", target_id=user.id)
     return Response({"status": "success", "message": "Password reset successful"})
 
 @swagger_auto_schema(
@@ -835,6 +895,7 @@ def reset_password(request):
 @api_view(['POST'])
 @authentication_classes([])
 @permission_classes([AllowAny])
+@throttle_classes([ResendOtpRateThrottle])
 def resend_otp(request):
     serializer = ResendOTPSerializer(data = request.data)
     serializer.is_valid(raise_exception=True)
@@ -873,6 +934,7 @@ def resend_otp(request):
     otp_obj.save()
 
     resend_otp_email(user.first_name,otp,user.email)
+    log_audit("PASSWORD_RESET_OTP_RESENT", request=request, user=user, target_type="user", target_id=user.id, details={"identifier": identifier})
 
     # print("RESEND OTP:", otp)
 

@@ -171,6 +171,16 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,  # Default page size for pagination
+    'DEFAULT_THROTTLE_RATES': {
+        'register': '5/hour',
+        'login': '10/minute',
+        'verification_confirm': '20/hour',
+        'resend_verification': '5/hour',
+        'forgot_password': '5/hour',
+        'verify_otp': '10/hour',
+        'reset_password': '5/hour',
+        'resend_otp': '5/hour',
+    },
 }
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"  # Fallback, but we'll use Brevo API
