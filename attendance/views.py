@@ -731,7 +731,7 @@ def export_event_pdf(request, event_id):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def export_this_week_csv(request):
-    if not request.user.is_superuser:
+    if not is_event_admin(request.user):
         return Response({"error": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
 
     start, end = this_week_range()
@@ -740,6 +740,8 @@ def export_this_week_csv(request):
         scan_time__gte=start,
         scan_time__lt=end
     ).select_related("user", "event")
+    if not request.user.is_superuser:
+        records = records.filter(event__created_by=request.user)
 
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="this_week_attendance.csv"'
@@ -779,7 +781,7 @@ def export_this_week_csv(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def export_this_week_pdf(request):
-    if not request.user.is_superuser:
+    if not is_event_admin(request.user):
         return Response({"error": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
 
     start, end = this_week_range()
@@ -788,6 +790,8 @@ def export_this_week_pdf(request):
         scan_time__gte=start,
         scan_time__lt=end
     ).select_related("user", "event")
+    if not request.user.is_superuser:
+        records = records.filter(event__created_by=request.user)
 
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="this_week_attendance.pdf"'
@@ -876,7 +880,7 @@ def export_this_week_pdf(request):
 @permission_classes([IsAuthenticated])
 def export_custom_range_csv(request):
 
-    if not request.user.is_superuser:
+    if not is_event_admin(request.user):
         return Response({"error": "Not allowed"}, status=status.HTTP_403_FORBIDDEN)
 
     start_raw = request.GET.get("start_date")
@@ -895,6 +899,8 @@ def export_custom_range_csv(request):
         scan_time__gte=start,
         scan_time__lt=end
     ).select_related("user", "event")
+    if not request.user.is_superuser:
+        records = records.filter(event__created_by=request.user)
 
     response = HttpResponse(content_type='text/csv')
     response["Content-Disposition"] = 'attachment; filename="custom_range.csv"'
@@ -952,7 +958,7 @@ def export_custom_range_csv(request):
 @permission_classes([IsAuthenticated])
 def export_custom_range_pdf(request):
 
-    if not request.user.is_superuser:
+    if not is_event_admin(request.user):
         return Response({"error": "Not allowed"}, status=403)
 
     start_raw = request.GET.get("start_date")
@@ -971,6 +977,8 @@ def export_custom_range_pdf(request):
         scan_time__gte=start,
         scan_time__lt=end
     ).select_related("user", "event")
+    if not request.user.is_superuser:
+        records = records.filter(event__created_by=request.user)
     
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="attendance_range.pdf"'
