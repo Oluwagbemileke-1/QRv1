@@ -681,7 +681,17 @@ def export_event_pdf(request, event_id):
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="{event.title}_attendance.pdf"'
 
-    doc = SimpleDocTemplate(response,pagesize=landscape(A4))
+    doc = SimpleDocTemplate(
+        response,
+        pagesize=landscape(A3),
+        leftMargin=10,
+        rightMargin=10,
+        topMargin=10,
+        bottomMargin=10,
+        title=f"{event.title} attendance export",
+        author="QRAMS",
+        subject=f"Attendance export for {event.title}",
+    )
 
     data = [[
         "First Name", "Last Name", "Username", "Email",
@@ -700,15 +710,23 @@ def export_event_pdf(request, event_id):
             r.device_info or ""
         ])
 
-    table = Table(data,  repeatRows=1)
+    page_width, _ = landscape(A3)
+    usable_width = page_width - 20
+    col_widths = calc_col_widths(data, usable_width)
+
+    table = Table(data, colWidths=col_widths, repeatRows=1)
 
     table.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), colors.grey),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
         ('GRID', (0,0), (-1,-1), 0.5, colors.black),
         ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0,0), (-1,-1), 7),
+        ('FONTSIZE', (0,0), (-1,-1), 9),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('LEFTPADDING', (0,0), (-1,-1), 4),
+        ('RIGHTPADDING', (0,0), (-1,-1), 4),
+        ('TOPPADDING', (0,0), (-1,-1), 4),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 4),
     ]))
 
 
@@ -803,6 +821,9 @@ def export_this_week_pdf(request):
         rightMargin=10,
         topMargin=10,
         bottomMargin=10,
+        title="This week attendance export",
+        author="QRAMS",
+        subject="Attendance export for this week",
     )
 
     data = [[
@@ -990,6 +1011,9 @@ def export_custom_range_pdf(request):
         rightMargin=10,
         topMargin=10,
         bottomMargin=10,
+        title="Custom attendance export",
+        author="QRAMS",
+        subject=f"Attendance export from {start_raw} to {end_raw}",
     )
 
     data = [[
